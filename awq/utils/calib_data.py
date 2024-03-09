@@ -63,3 +63,56 @@ def get_calib_dataset(
     return [
         cat_samples[:, i * block_size : (i + 1) * block_size] for i in range(n_split)
     ]
+
+
+
+def get_calib_dataset_switchtransformer(
+    data,
+    tokenizer,
+    n_samples=512,
+    block_size=512,
+    split="train",
+    text_column="text",
+):
+    # Load and shuffle the dataset
+    if isinstance(data, str):
+        dataset = load_dataset(data, split=split) if data != "pileval" else load_dataset("mit-han-lab/pile-val-backup", split="validation")
+        dataset = dataset.shuffle(seed=42)
+    elif isinstance(data, list) and isinstance(data[0], str):
+        dataset = [{text_column: text} for text in data]
+    else:
+        raise NotImplementedError("Data should be a dataset name or a list of strings.")
+
+    # Initialize lists to store encoder and decoder samples
+    encoder_samples, decoder_samples = [], []
+
+    # Iterate over the dataset to prepare encoder and decoder inputs
+    for n_run, item in enumerate(dataset):
+        if n_run >= n_samples:
+            break
+
+        # Tokenize the text
+        text = item[text_column].strip()
+        tokens = tokenizer.encode(text, add_special_tokens=False)
+        
+        if 0 < len(tokens) <= block_size:
+            # Prepare encoder input
+            encoder_input = torch.tensor([tokens])
+            encoder_samples.append(encoder_input)
+
+            # Prepare decoder input: shift right and add <sos> token at the beginning
+            decoder_input = torch.tensor([[0] + tokens[:-1]])
+            decoder_samples.append(decoder_input)
+
+    # Concatenate all samples and split according to block size
+    encoder_samples = torch.cat(encoder_samples, dim=1)
+    decoder_samples = torch.cat(decoder_samples, dim=1)
+
+    # Split samples into blocks
+    n_split = encoder_samples.shape[1] // block_size
+    encoder_blocks = [encoder_samples[:, i * block_size: (i + 1) * block_size] for i in range(n_split)]
+    decoder_blocks = [decoder_samples[:, i * block_size: (i + 1) * block_size] for i in range(n_split)]
+
+    return encoder_blocks, decoder_blocks
+
+

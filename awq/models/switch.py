@@ -1,7 +1,7 @@
 import tqdm
 from typing import List, Tuple
 from .base import BaseAWQForSeq2SeqLM
-
+import torch
 from transformers.models.switch_transformers.modeling_switch_transformers import (
     SwitchTransformersBlock as OldSwitchTransformersBlock,
     SwitchTransformersModel as OldSwitchTransformersModel,
@@ -21,9 +21,8 @@ class SwitchAWQ(BaseAWQForSeq2SeqLM):
 
     @staticmethod
     def get_model_layers(model: OldSwitchTransformersModel):
-        model.decoder.block
-        model.encoder.block
-        return model.model.layers
+        layers = model.encoder.block + model.decoder.block
+        return layers
 
     @staticmethod
     def get_act_for_scaling(module: OldSwitchTransformersBlock):
@@ -31,10 +30,12 @@ class SwitchAWQ(BaseAWQForSeq2SeqLM):
 
     @staticmethod
     def move_embed(model: OldSwitchTransformersModel, device: str):
-        model.model.embed_tokens = model.model.embed_tokens.to(device)
+        # TODO just for the encoder 
+        model.encoder.embed_tokens = model.encoder.embed_tokens.to(device)
 
     @staticmethod
     def get_layers_for_scaling(module: OldSwitchTransformersBlock, input_feat, module_kwargs):
+        # TODO (xiaolong): just for encoder
         layers = []
 
         # attention input

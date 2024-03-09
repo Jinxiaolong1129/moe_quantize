@@ -43,7 +43,7 @@ from accelerate.big_modeling import (
 
 from awq.models._config import AwqConfig
 from awq.modules.act import ScaledActivation
-from awq.quantize.quantizer import AwqQuantizer
+from awq.quantize.quantizer import AwqQuantizer, AwqQuantizerForSeq2SeqLM
 from awq.utils.module import get_named_linears, set_op_by_name
 
 # Since we support different `AutoModelForxxx` from transformers
@@ -670,7 +670,7 @@ class BaseAWQForSeq2SeqLM(nn.Module):
         if hasattr(self, "modules_to_not_convert"):
             self.quant_config.modules_to_not_convert = self.modules_to_not_convert
 
-        self.quantizer = AwqQuantizer(
+        self.quantizer = AwqQuantizerForSeq2SeqLM(
             self,
             self.model,
             tokenizer,
@@ -992,7 +992,7 @@ class BaseAWQForSeq2SeqLM(nn.Module):
             else:
                 ignore_patterns.append("*.safetensors*")
 
-            model_path = snapshot_download(model_path, ignore_patterns=ignore_patterns)
+            model_path = snapshot_download(model_path, ignore_patterns=ignore_patterns, cache_dir=config_kwargs.get('cache_dir', None))
 
         if model_filename != "":
             model_weights_path = model_path + f"/{model_filename}"

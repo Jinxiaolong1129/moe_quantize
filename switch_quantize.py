@@ -1,6 +1,7 @@
 import os
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '4'
+os.environ['HF_HOME'] = '/data3/user/jin509/hf_cache'
 
 from pickle import NONE
 from transformers import AutoTokenizer, SwitchTransformersForConditionalGeneration
@@ -10,6 +11,16 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausa
 from transformers import AutoModelForCausalLM, AutoTokenizer, GPTQConfig
 
 from datasets import load_dataset
+
+
+import torch
+from transformers import AutoConfig
+
+from awq import AutoAWQForSeq2SeqLM
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausalLM
+print(f'Using GPUs: {os.environ["CUDA_VISIBLE_DEVICES"]}')
+print(f'torch.cuda.device_count(): {torch.cuda.device_count()}')
+
 
 
 # def get_calib_dataset(
@@ -141,15 +152,14 @@ if __name__ == "__main__":
 
     for model_name in models:
         print(f"Running analysis on {model_name}")
-
-        tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=custom_cache_dir)
-        token1 = tokenizer.bos_token
-        token2 = tokenizer.eos_token
-        model = AutoModelForSeq2SeqLM.from_pretrained(model_name, cache_dir=custom_cache_dir)
-
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        model = model.to(device)
+        tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=custom_cache_dir)
+        
+        # token1 = tokenizer.bos_token
+        # token2 = tokenizer.eos_token
+        # model = AutoModelForSeq2SeqLM.from_pretrained(model_name, cache_dir=custom_cache_dir)
+        # model = model.to(device)
 
 
         # input_text = "A <extra_id_0> walks into a bar a orders a <extra_id_1> with <extra_id_2> pinch of <extra_id_3>."
@@ -167,14 +177,46 @@ if __name__ == "__main__":
             text_column='text',
         )
 
-        
-        # samples = torch.cat(samples, dim=0) # [65 512]
-        # samples = samples.to(device)
-        
         encoder_input = torch.cat(encoder_input_id, dim=0).to(device)
         decoder_input = torch.cat(decoder_input_id, dim=0).to(device)
 
-        outputs = model(input_ids=encoder_input, decoder_input_ids=decoder_input)
+        # outputs = model(input_ids=encoder_input, decoder_input_ids=decoder_input)
+
+        w_bit = 4
+
+
+        model_path = "google/switch-base-8"
+
+
+        # model_path = "/data4/share/xiaolong/switch_transformer/models--google--switch-base-8"
+        # cache_dir = "/data4/share/xiaolong/switch_transformer/models--google--switch-base-8"
+        quant_path = f'/data4/share/xiaolong/switch_transformer-awq-w_bit_{w_bit}'
+
+
+        print(f'Quantizing with w_bit={w_bit}')
+        quant_config = { "zero_point": True, "q_group_size": 128, "w_bit": w_bit, "version": "GEMM" }
+
+        print(f'Saving quantized model at "{quant_path}"')
+
+
+        # Load model
+        model = AutoAWQForSeq2SeqLM.from_pretrained(
+            model_path=model_path, safetensors=False, **{"low_cpu_mem_usage": True, "use_cache": True}
+        )
+
+
+        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+
+        # TODO (xiaolong): quantize start here
+        model.quantize(tokenizer, quant_config=quant_config)
+
+
+
+        # Save quantized model
+        model.save_quantized(quant_path)
+        tokenizer.save_pretrained(quant_path)
+
+        print(f'Model is quantized and saved at "{quant_path}"')
 
 
         # inputs = tokenizer(samples, max_length=512, truncation=True, padding="max_length", return_tensors="pt")

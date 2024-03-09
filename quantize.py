@@ -15,8 +15,8 @@ print(f'torch.cuda.device_count(): {torch.cuda.device_count()}')
 w_bit = 4
 
 
-model_path = "meta-llama/Llama-2-7b-chat-hf"
-cache_dir = '/data4/share/xiaolong/Llama-2-7b-chat-hf'
+# model_path = "meta-llama/Llama-2-7b-chat-hf"
+model_path = '/data4/share/xiaolong/Llama-2-7b-chat-hf'
 quant_path = f'/data4/share/xiaolong/Llama-2-7b-chat-hf-awq-w_bit_{w_bit}'
 
 
@@ -43,15 +43,10 @@ model = AutoAWQForCausalLM.from_pretrained(
     model_path=model_path, safetensors=False, **{"low_cpu_mem_usage": True, "use_cache": True }
 )
 
-
 tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
 # TODO (xiaolong): quantize start here
 model.quantize(tokenizer, quant_config=quant_config)
-
-
-
-
 
 
 # Save quantized model
