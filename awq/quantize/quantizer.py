@@ -22,6 +22,7 @@ from awq.utils.module import (
     set_op_by_name,
     exclude_layers_to_not_quantize,
 )
+from transformers.models.switch_transformers.modeling_switch_transformers import SwitchTransformersSparseMLP
 
 
 class AwqQuantizer:
@@ -445,7 +446,6 @@ class AwqQuantizer:
 
     def init_quant(self, n_samples=32, seqlen=512): # n_samples=128, seqlen=512
 
-
         # TODO (xiaolong): get modules here
         modules = self.awq_model.get_model_layers(self.model)
         # (xiaolong) get calibration dataset
@@ -610,7 +610,7 @@ class AwqQuantizerForSeq2SeqLM:
         self.modules_to_not_convert = (
             modules_to_not_convert if modules_to_not_convert is not None else []
         )
-        self.modules, self.module_kwargs, self.inps = self.init_quant()
+        self.encoder_modules, self.decoder_modules, self.module_kwargs, self.inps, self.decoder_layer_kwargs, self.decoder_inps, self.encoder_hidden_states = self.init_quant()
 
         print(f"Quantizing with w_bit={w_bit}")
 
@@ -670,17 +670,92 @@ class AwqQuantizerForSeq2SeqLM:
     def quantize(self):
         # TODO (xiaolong): 对每个module 开始顺序quantize
         # TODO (xiaolong): decoder works well, switch transformer may need to change
-        for i in tqdm(range(len(self.modules)), desc="AWQ"):
+
+
+        # for i in tqdm(range(len(self.encoder_modules)), desc="AWQ"):
+        #     # if i == 1:
+        #     #     print('moe layer')
+        #     # if i == 12:
+        #     #     print('decoder layer')
+        #     # Move module and inputs to correct device
+        #     common_device = next(self.encoder_modules[i].parameters()).device
+        #     if common_device is None or str(common_device) == "cpu":
+        #         if torch.cuda.is_available():
+        #             best_device = "cuda:" + str(i % torch.cuda.device_count())
+        #         else:
+        #             best_device = get_best_device()
+
+        #         self.encoder_modules[i] = self.encoder_modules[i].to(best_device)
+        #         common_device = next(self.encoder_modules[i].parameters()).device
+
+        #     if self.module_kwargs.get("position_ids") is not None:
+        #         self.module_kwargs["position_ids"] = self.module_kwargs[
+        #             "position_ids"
+        #         ].to(common_device)
+
+        #     if self.module_kwargs.get("attention_mask") is not None:
+        #         self.module_kwargs["attention_mask"] = self.module_kwargs[
+        #             "attention_mask"
+        #         ].to(common_device)
+
+        #     self.inps = self.inps.to(common_device)
+
+        #     # [STEP 1]: Get layer, extract linear modules, extract input features
+
+
+        #     # TODO (xiaolong): for switch transformer, may need change
+        #     named_linears = get_named_linears(self.encoder_modules[i]) #  get linear layers ## here
+
+        #     # Filter out the linear layers we don't want to exclude
+        #     named_linears = exclude_layers_to_not_quantize(
+        #         named_linears, self.modules_to_not_convert
+        #     )
+        #     input_feat = self._get_input_feat(self.encoder_modules[i], named_linears) # 处理数据 module i
+        #     clear_memory()
+
+        #     # NOTE (xioalong): AWQ algorithm
+
+        #     # [STEP 2]: Compute and apply scale list. # important
+        #     module_config: List[Dict] = self.awq_model.get_layers_for_scaling(
+        #         self.encoder_modules[i], input_feat, self.module_kwargs
+        #     )
+        #     scales_list = [
+        #         self._search_best_scale(self.encoder_modules[i], **layer)
+        #         for layer in module_config
+        #     ]
+        #     apply_scale(self.encoder_modules[i], scales_list, input_feat_dict=input_feat)
+        #     scales_list = append_str_prefix(
+        #         scales_list, get_op_name(self.model, self.encoder_modules[i]) + "."
+        #     )
+
+        #     # [STEP 3]: Compute and apply clipping list
+        #     clip_list = self._search_best_clip(
+        #         self.encoder_modules[i], named_linears, input_feat
+        #     )
+        #     apply_clip(self.encoder_modules[i], clip_list)
+        #     clip_list = append_str_prefix(
+        #         clip_list, get_op_name(self.model, self.encoder_modules[i]) + "."
+        #     )
+
+        #     # NOTE (xiaolong): Final Quantize
+        #     # [STEP 4]: Quantize weights
+        #     if not self.export_compatible:
+        #         self._apply_quant(self.encoder_modules[i], named_linears)
+
+        #     clear_memory()
+
+
+        for i in tqdm(range(len(self.decoder_modules)), desc="AWQ"):
             # Move module and inputs to correct device
-            common_device = next(self.modules[i].parameters()).device
+            common_device = next(self.decoder_modules[i].parameters()).device
             if common_device is None or str(common_device) == "cpu":
                 if torch.cuda.is_available():
                     best_device = "cuda:" + str(i % torch.cuda.device_count())
                 else:
                     best_device = get_best_device()
 
-                self.modules[i] = self.modules[i].to(best_device)
-                common_device = next(self.modules[i].parameters()).device
+                self.decoder_modules[i] = self.decoder_modules[i].to(best_device)
+                common_device = next(self.decoder_modules[i].parameters()).device
 
             if self.module_kwargs.get("position_ids") is not None:
                 self.module_kwargs["position_ids"] = self.module_kwargs[
@@ -692,51 +767,49 @@ class AwqQuantizerForSeq2SeqLM:
                     "attention_mask"
                 ].to(common_device)
 
-            self.inps = self.inps.to(common_device)
+            self.decoder_inps = self.decoder_inps.to(common_device)
 
             # [STEP 1]: Get layer, extract linear modules, extract input features
 
 
             # TODO (xiaolong): for switch transformer, may need change
-            named_linears = get_named_linears(self.modules[i]) #  get linear layers ## here
+            named_linears = get_named_linears(self.decoder_modules[i]) #  get linear layers ## here
 
             # Filter out the linear layers we don't want to exclude
             named_linears = exclude_layers_to_not_quantize(
                 named_linears, self.modules_to_not_convert
             )
-
-
-            input_feat = self._get_input_feat(self.modules[i], named_linears) # 处理数据 module i
+            input_feat = self._get_input_feat_decoder(self.decoder_modules[i], named_linears) # 处理数据 module i
             clear_memory()
 
             # NOTE (xioalong): AWQ algorithm
 
             # [STEP 2]: Compute and apply scale list. # important
             module_config: List[Dict] = self.awq_model.get_layers_for_scaling(
-                self.modules[i], input_feat, self.module_kwargs
+                self.decoder_modules[i], input_feat, self.module_kwargs
             )
             scales_list = [
-                self._search_best_scale(self.modules[i], **layer)
+                self._search_best_scale(self.decoder_modules[i], **layer)
                 for layer in module_config
             ]
-            apply_scale(self.modules[i], scales_list, input_feat_dict=input_feat)
+            apply_scale(self.decoder_modules[i], scales_list, input_feat_dict=input_feat)
             scales_list = append_str_prefix(
-                scales_list, get_op_name(self.model, self.modules[i]) + "."
+                scales_list, get_op_name(self.model, self.decoder_modules[i]) + "."
             )
 
             # [STEP 3]: Compute and apply clipping list
             clip_list = self._search_best_clip(
-                self.modules[i], named_linears, input_feat
+                self.decoder_modules[i], named_linears, input_feat
             )
-            apply_clip(self.modules[i], clip_list)
+            apply_clip(self.decoder_modules[i], clip_list)
             clip_list = append_str_prefix(
-                clip_list, get_op_name(self.model, self.modules[i]) + "."
+                clip_list, get_op_name(self.model, self.decoder_modules[i]) + "."
             )
 
             # NOTE (xiaolong): Final Quantize
             # [STEP 4]: Quantize weights
             if not self.export_compatible:
-                self._apply_quant(self.modules[i], named_linears)
+                self._apply_quant(self.decoder_modules[i], named_linears)
 
             clear_memory()
 
@@ -865,7 +938,7 @@ class AwqQuantizerForSeq2SeqLM:
         W: original weights in FP16     | layer
         s: per channel scaling factor   | s^-1 * X
         """
-        n_grid = 20
+        n_grid = 40
         history = []
         best_ratio = -1
         best_scales = None
@@ -877,6 +950,8 @@ class AwqQuantizerForSeq2SeqLM:
         x_mean = x_mean.view(-1).to(device)
         w_mean = w_mean.view(-1).to(device)
 
+        if isinstance(module2inspect, SwitchTransformersSparseMLP):
+            print("Sparse MLP")
         for ratio in range(n_grid):
             # create new scales
             ratio = ratio / n_grid
@@ -902,8 +977,22 @@ class AwqQuantizerForSeq2SeqLM:
                 int_w_output = int_w_output[0]
 
             # compute mean squared error (L2 norm)
+                
+            # 内存溢出
+            # For fp16_output
+            max_fp16 = torch.max(fp16_output[torch.isfinite(fp16_output)])  # Find the max finite value
+            fp16_output_clean = torch.where(torch.isinf(fp16_output), max_fp16, fp16_output)  # Replace inf with max finite
+
+            # For int_w_output
+            max_int_w = torch.max(int_w_output[torch.isfinite(int_w_output)])  # Find the max finite value
+            int_w_output_clean = torch.where(torch.isinf(int_w_output), max_int_w, int_w_output)  # Replace inf with max finite
+
+            # Now compute the mean
+            result = (fp16_output_clean.to(torch.float32) - int_w_output_clean.to(torch.float32)).pow(2).mean().item()
+
             loss = (
-                (fp16_output - int_w_output).float().pow(2).mean().item()
+                # (fp16_output - int_w_output).float().pow(2).mean().item()
+                result
             )  # NOTE: float prevents overflow
 
             history.append(loss)
@@ -956,7 +1045,12 @@ class AwqQuantizerForSeq2SeqLM:
         group_size = self.group_size if self.group_size > 0 else org_w_shape[1]
         input_feat = input_feat.view(-1, input_feat.shape[-1])
         input_feat = input_feat.reshape(1, input_feat.shape[0], -1, group_size)
-        input_feat = input_feat[:, 0 :: input_feat.shape[1] // n_sample_token]
+        if (input_feat.shape[1] // n_sample_token) > 1:
+            step_size = input_feat.shape[1] // n_sample_token
+        else:
+            step_size = 1 # NOTE 不确定对不对
+
+        input_feat = input_feat[:, 0 :: step_size]
         w = w.reshape(org_w_shape[0], 1, -1, group_size)
 
         oc_batch_size = 256 if org_w_shape[0] % 256 == 0 else 64  # prevent OOM
@@ -997,10 +1091,14 @@ class AwqQuantizerForSeq2SeqLM:
 
         return best_max_val.squeeze(1)
 
-    def init_quant(self, n_samples=32, seqlen=512): # n_samples=128, seqlen=512
+    def init_quant(self, n_samples=8, seqlen=512): # TODO n_samples=128, seqlen=512
 
         # TODO (xiaolong): get modules here
-        modules = self.awq_model.get_model_layers(self.model)
+        # modules = self.awq_model.get_model_layers(self.model)
+
+        encoder_modules = self.model.encoder.block 
+        decoder_modules = self.model.decoder.block 
+
         # (xiaolong) get calibration dataset
         encoder_input_id, decoder_input_id = get_calib_dataset_switchtransformer(
             data=self.calib_data,
@@ -1018,20 +1116,22 @@ class AwqQuantizerForSeq2SeqLM:
         # encoder_input.to(next(self.model.parameters()).device)
         # decoder_input.to(next(self.model.parameters()).device)
 
-        inps = []
-        layer_kwargs = {}
 
         best_device = get_best_device()
-        modules[0] = modules[0].to(best_device)
+        self.model = self.model.to(best_device)
         self.awq_model.move_embed(self.model, best_device) # embedding move to gpu
 
         encoder_input = encoder_input.to(best_device)
-        encoder_input = decoder_input.to(best_device)
+        decoder_input = decoder_input.to(best_device)
 
         # self.awq_model.to(best_device)
         # get input and kwargs to layer 0
         # with_kwargs is only supported in PyTorch 2.0
         # use this Catcher hack for now
+
+        inps = []
+        layer_kwargs = {}
+
         class Catcher(nn.Module):
             def __init__(self, module):
                 super().__init__()
@@ -1050,25 +1150,75 @@ class AwqQuantizerForSeq2SeqLM:
                 layer_kwargs.update(kwargs)
                 raise ValueError  # early exit to break later inference
 
-        # patch layer 0 to catch input and kwargs
-        modules[0] = Catcher(modules[0])
+        encoder_layers = self.model.encoder.block
+
+        # Replace the first encoder layer with Catcher
+        if len(encoder_layers) > 0:
+            original_first_encoder_layer = encoder_layers[0]
+            encoder_layers[0] = Catcher(original_first_encoder_layer)
+
         try:
-            # self.model(samples.to(next(self.model.parameters()).device))
             self.model(encoder_input) # torch.Size([512, 8])
         except ValueError:  # work with early exit
             pass
-        modules[0] = modules[0].module  # restore
 
+        self.awq_model.model.encoder.block[0] = self.awq_model.model.encoder.block[0].module
 
-        layer_kwargs = self.model.prepare_inputs_for_generation(samples, **layer_kwargs)
+        layer_kwargs = self.model.prepare_inputs_for_generation(encoder_input, **layer_kwargs)
         # Pop the input_ids as they are not needed at all.
-        layer_kwargs.pop("input_ids")
+        # layer_kwargs.pop("input_ids")
 
-        del samples
+        # del samples
         inps = inps[0]
 
-        modules[0] = modules[0].cpu()
-        self.awq_model.move_embed(self.model, "cpu")
+        
+
+        decoder_inps = []
+        encoder_hidden_states = []
+        decoder_layer_kwargs = {}
+
+        class Catcher(nn.Module):
+            def __init__(self, module):
+                super().__init__()
+                self.module = module
+
+            def forward(self, *args, **kwargs):
+                # assume first input to forward is hidden states
+                if len(args) > 0:
+                    hidden_states = args[0] 
+                    encoder_hidden_state = kwargs['encoder_hidden_states']
+                    del args
+                else:
+                    first_key = list(kwargs.keys())[0]
+                    hidden_states = kwargs.pop(first_key)
+
+                decoder_inps.append(hidden_states)
+                encoder_hidden_states.append(encoder_hidden_state)
+
+                decoder_layer_kwargs.update(kwargs)
+                raise ValueError  # early exit to break later inference
+
+        decode_layers = self.model.decoder.block
+
+        # Replace the first encoder layer with Catcher
+        if len(decode_layers) > 0:
+            original_first_decoder_layer = self.model.decoder.block[0]
+            self.model.decoder.block[0] = Catcher(original_first_decoder_layer)
+
+
+        try:
+            self.model(input_ids = encoder_input, decoder_input_ids = decoder_input) 
+        except ValueError:  # work with early exit
+            pass
+
+        self.awq_model.model.decoder.block[0] = self.awq_model.model.decoder.block[0].module
+
+        decoder_inps = decoder_inps[0]
+        encoder_hidden_states = encoder_hidden_states[0]
+
+
+        # modules[0] = modules[0].cpu()
+        # self.awq_model.move_embed(self.model, "cpu")
 
         clear_memory()
 
@@ -1077,14 +1227,14 @@ class AwqQuantizerForSeq2SeqLM:
                 best_device
             )
         # (xiaolong) get some layer_kwargs and inps 
-        return modules, layer_kwargs, inps
+        return encoder_modules, decoder_modules, layer_kwargs, inps, decoder_layer_kwargs, decoder_inps, encoder_hidden_states
 
     def _get_input_feat(self, layer, named_linears):
         # firstly, get input features of all linear layers
         def cache_input_hook(m, x, y, name, feat_dict):
             x = x[0]
             x = x.detach().cpu()
-            feat_dict[name].append(x)
+            feat_dict[name].append(x) # 加入每一个linear的输入
 
         input_feat = defaultdict(list) # dict 
         handles = []
@@ -1096,6 +1246,12 @@ class AwqQuantizerForSeq2SeqLM:
                 "block_sparse_moe": layer.block_sparse_moe,
             }
 
+        if self.awq_model.model_type == "switch_transformers":
+            if layer.is_sparse == True:
+                named_linears = {
+                    **named_linears,
+                    "mlp": layer.layer[1].mlp,
+                }
 
         # use hook to get input features
         # TODO (xiaolong) get output as next layer's input
@@ -1113,13 +1269,62 @@ class AwqQuantizerForSeq2SeqLM:
         # Useful for trust_remote_code models.
         module_kwargs = self._sanitize_kwargs(self.module_kwargs, layer)
 
-        self.inps = layer(self.inps, **module_kwargs)[0]
+        self.inps = layer(self.inps, **module_kwargs)[0] # inps 过一遍block 获得下一个block的输入
         for h in handles:
             h.remove()
         # now solve for scaling and clipping
         input_feat = {k: torch.cat(v, dim=0) for k, v in input_feat.items()}
 
-        return input_feat
+        return input_feat # 当前block中每一个linear的输入
+
+    def _get_input_feat_decoder(self, layer, named_linears):
+        # firstly, get input features of all linear layers
+        def cache_input_hook(m, x, y, name, feat_dict):
+            x = x[0]
+            x = x.detach().cpu()
+            feat_dict[name].append(x) # 加入每一个linear的输入
+
+        input_feat = defaultdict(list) # dict 
+        handles = []
+
+        # FIXME: Workaround for Mixtral to use block_sparse_moe input features
+        if self.awq_model.model_type == "mixtral":
+            named_linears = {
+                **named_linears,
+                "block_sparse_moe": layer.block_sparse_moe,
+            }
+
+        if self.awq_model.model_type == "switch_transformers":
+            if layer.is_sparse == True:
+                named_linears = {
+                    **named_linears,
+                    "mlp": layer.layer[2].mlp,
+                }
+
+        # use hook to get input features
+        # TODO (xiaolong) get output as next layer's input
+        for name in named_linears:
+            handles.append(
+                named_linears[name].register_forward_hook(
+                    functools.partial(cache_input_hook, name=name, feat_dict=input_feat)
+                )
+            )
+        self.decoder_inps = self.decoder_inps.to(next(layer.parameters()).device)  
+        
+
+        # Sanitize the kwargs in case we use transformers version that contains
+        # kwargs that are not handled by the module.
+        # Useful for trust_remote_code models.
+        module_kwargs = self._sanitize_kwargs(self.module_kwargs, layer)
+
+        self.decoder_inps = layer(hidden_states = self.decoder_inps, encoder_hidden_states = self.encoder_hidden_states , **module_kwargs)[0] # decoder_inps 过一遍block 获得下一个block的输入
+        for h in handles:
+            h.remove()
+        # now solve for scaling and clipping
+        input_feat = {k: torch.cat(v, dim=0) for k, v in input_feat.items()}
+
+        return input_feat # 当前block中每一个linear的输入
+
 
     def _sanitize_kwargs(self, inputs_kwargs, module):
         """

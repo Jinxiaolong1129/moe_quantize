@@ -21,7 +21,14 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausa
 print(f'Using GPUs: {os.environ["CUDA_VISIBLE_DEVICES"]}')
 print(f'torch.cuda.device_count(): {torch.cuda.device_count()}')
 
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, AutoModelForSequenceClassification
+from moduleformer import ModuleFormerForCausalLM, ModuleFormerConfig, ModuleFormerForSequenceClassification
+AutoConfig.register("moduleformer", ModuleFormerConfig)
+AutoModelForCausalLM.register(ModuleFormerConfig, ModuleFormerForCausalLM)
+AutoModelForSequenceClassification.register(ModuleFormerConfig, ModuleFormerForSequenceClassification)
 
+tokenizer = AutoTokenizer.from_pretrained('ibm/MoLM-350M-4B')
+model = AutoModelForCausalLM.from_pretrained('ibm/MoLM-350M-4B')
 
 # def get_calib_dataset(
 #     data,
@@ -209,6 +216,7 @@ if __name__ == "__main__":
 
         # TODO (xiaolong): quantize start here
         model.quantize(tokenizer, quant_config=quant_config)
+
 
 
         # Save quantized model

@@ -6,9 +6,12 @@ from awq.modules.act import ScaledActivation
 from awq.utils.module import get_op_by_name, set_op_by_name
 from transformers.models.bloom.modeling_bloom import BloomGelu
 from transformers.models.llama.modeling_llama import LlamaRMSNorm
+from transformers.models.switch_transformers.modeling_switch_transformers import SwitchTransformersLayerNorm
+
+
 from transformers.activations import NewGELUActivation, PytorchGELUTanh, GELUActivation
 
-allowed_norms = [nn.LayerNorm, LlamaRMSNorm]
+allowed_norms = [nn.LayerNorm, LlamaRMSNorm, SwitchTransformersLayerNorm]
 allowed_act_fns = [
     nn.GELU,
     BloomGelu,
@@ -54,7 +57,7 @@ def apply_scale(module, scales_list, input_feat_dict=None):
             scale_fc_fc(prev_op, layers[0], scales)
 
         elif (
-            any(isinstance(prev_op, t) for t in allowed_norms)
+            any(isinstance(prev_op, t) for t in allowed_norms)    # add switch transformer's SwitchTransformersLayerNorm
             or "rmsnorm" in str(prev_op.__class__).lower()
         ):
             scale_ln_fcs(prev_op, layers, scales)

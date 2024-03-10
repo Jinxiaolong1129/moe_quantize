@@ -2,7 +2,10 @@ import torch.nn as nn
 
 
 def get_named_linears(module):
-    return {name: m for name, m in module.named_modules() if isinstance(m, nn.Linear)}
+    if module.is_decoder:
+        return {name: m for name, m in module.named_modules() if isinstance(m, nn.Linear)}
+    else:
+        return {name: m for name, m in module.named_modules() if isinstance(m, nn.Linear)}
 
 
 def get_op_by_name(module, op_name):
@@ -32,6 +35,8 @@ def get_op_name(module, op):
     for name, m in module.named_modules():
         if m is op:
             return name
+    if op is None:
+        return None
     raise ValueError(f"Cannot find op {op} in module {module}")
 
 

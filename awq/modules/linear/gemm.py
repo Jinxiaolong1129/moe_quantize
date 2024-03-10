@@ -136,7 +136,7 @@ class WQLinear_GEMM(nn.Module):
     @classmethod
     def from_linear(
         cls, linear, w_bit, group_size, init_only=False, scales=None, zeros=None
-    ):
+    ): # 修改w_bit here
         awq_linear = cls(
             w_bit,
             group_size,
