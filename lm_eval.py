@@ -1,38 +1,30 @@
 import sys
+
 sys.path.append("/home/LeiFeng/xiaolong/moe_quantize/optimum/")  # Add the path to Python's search path
 # print(sys.path)
 
 import argparse
 import os
-import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
 import json
 
 from lm_eval import evaluator
 from lm_eval.models.huggingface import HFLM
 from lm_eval.tasks import initialize_tasks
 
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from optimum.gptq import GPTQQuantizer, load_quantized_model, GPTQQuantizer_deepseek
 import torch
-import random
-from argparse import ArgumentParser
 
-from transformers import AutoTokenizer, TextGenerationPipeline
-import logging
-from datasets import load_dataset
+from transformers import AutoTokenizer
 
-from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig, AutoGPTQForCausalLM_mixed_precision, BaseQuantizeConfig_mixed_precision
-
+from auto_gptq import AutoGPTQForCausalLM_mixed_precision
 
 LM_EVAL_TASK_KWARGS_DICT = {
-    # "winogrande": {"task": "winogrande", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    # "copa": {"task": "copa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    # "openbookqa": {"task": "openbookqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
-    # "hellaswag": {"task": "hellaswag", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
-    # "lambada_openai": {"task": "lambada_openai", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    # "rte": {"task": "rte", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    # "piqa": {"task": "piqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
+    "winogrande": {"task": "winogrande", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
+    "copa": {"task": "copa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
+    "openbookqa": {"task": "openbookqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
+    "hellaswag": {"task": "hellaswag", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
+    "lambada_openai": {"task": "lambada_openai", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
+    "rte": {"task": "rte", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
+    "piqa": {"task": "piqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
     "mmlu": {"task": "mmlu", "num_fewshot": 5, "batch_size": 16, "metric": "acc"},
 }
 
@@ -41,7 +33,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_name", type=str, default='deepseek-ai/deepseek-moe-16b-chat')
     parser.add_argument("--quant_model_path", type=str)
     parser.add_argument("--bits", type=str)
-    
+
     # parser.add_argument("--model_basename", type=str, default=None, help="Model file's basename.")
     parser.add_argument("--n_ctx", type=int, default=512, help="Context size.")
     parser.add_argument("--n_batch", type=int, default=512, help="Batch size.")
@@ -78,7 +70,7 @@ if __name__ == "__main__":
 
     if args.is_quantized:
         args.quantized_model_file_base_name = f'{args.model_name.split("/")[-1]}-gptq_w_bit_{args.bits}'
-        
+
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
         tokenizer = AutoTokenizer.from_pretrained(args.model_name, use_fast=args.use_fast_tokenizer)
@@ -112,13 +104,12 @@ if __name__ == "__main__":
             # disable_exllama=args.disable_exllama,
         )
 
-    
-    save_file_path = os.path.join(f"{args.quant_model_path.split('/')[0]}", f"eval_result_{args.quant_model_path.split('/')[-1]}")
+    save_file_path = os.path.join(f"{args.quant_model_path.split('/')[0]}",
+                                  f"eval_result_{args.quant_model_path.split('/')[-1]}")
     all_metrics = {}
     if os.path.exists(save_file_path):
         with open(save_file_path, 'r') as file:
             all_metrics = json.load(file)
-
 
     for task_kwargs in LM_EVAL_TASK_KWARGS_DICT.values():
         print(f"Evaluating task: {task_kwargs['task']}")
@@ -143,11 +134,10 @@ if __name__ == "__main__":
 
         with open(save_file_path, 'w') as file:
             json.dump(all_metrics, file, indent=4)
-            
+
     print(">>>>> Results <<<<<")
     if args.is_quantized:
         print(f"Quantization on {args.model_name}")
     else:
         print(f"No quantization on {args.model_name}")
     print(f"Metrics: {all_metrics}")
-
