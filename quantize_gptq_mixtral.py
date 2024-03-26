@@ -106,7 +106,7 @@ def mixtral_quantize_config(args):
 def main():
     parser = ArgumentParser()
     parser.add_argument("--bits", type=str)
-
+    parser.add_argument("--all_bits", type=int, default=None)
     parser.add_argument("--model_name", type=str, default=None)
     parser.add_argument("--nsamples", type=int, default=512)
     parser.add_argument("--group_size", type=int, default=128)
@@ -127,10 +127,13 @@ def main():
     quant_path = f'autogptq_{model_name}-gptq_w_bit_{args.bits}'
     quantized_model_file_base_name = f'{model_name.split("/")[-1]}-gptq_w_bit_{args.bits}'
 
-    mixtral_bit_dict = mixtral_quantize_config(args)
+    if args.all_bits is not None:
+        mixtral_bits = args.all_bits
+    else:
+        mixtral_bits = mixtral_quantize_config(args)
 
     quantize_config = BaseQuantizeConfig_mixed_precision(
-        bits=mixtral_bit_dict,  # quantize model to 4-bit
+        bits=mixtral_bits,  # quantize model to 4-bit
         group_size=args.group_size,  # it is recommended to set the value to 128
         desc_act=False,  # set to False can significantly speed up inference but the perplexity may slightly bad
         model_file_base_name=quantized_model_file_base_name
@@ -138,12 +141,12 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     model = AutoGPTQForCausalLM_mixed_precision.from_pretrained(model_name, quantize_config, torch_dtype=torch.float16,
-                                                                trust_remote_code=True)
+                                                                trust_remote_code=True, device_map="auto")
 
     quantization_dataset = get_wikitext2(tokenizer=tokenizer, seqlen=4096, nsamples=args.nsamples, split="train")
     logging.info(f"Quantization dataset loaded with {args.nsamples} samples")
     logging.info(f"Quantizing model to {args.bits}-bit")
-    logging.info(f"Quantization config: {mixtral_bit_dict}")
+    logging.info(f"Quantization config: {mixtral_bits}")
     logging.info(f"Quantized begin!!!!")
     model.quantize(quantization_dataset)
     logging.info(f"Quantized finish!!!!")
