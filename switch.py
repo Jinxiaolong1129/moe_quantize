@@ -129,14 +129,14 @@ def get_calib_dataset(
 if __name__ == "__main__":
 
     # model_name = "meta-llama/Llama-2-7b-chat-hf"
-    # custom_cache_dir = "/data4/share/xiaolong/Llama-2-7b-chat-hf"
+    # custom_cache_dir = "/data4/share/pingzhi/Llama-2-7b-chat-hf"
     # tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=custom_cache_dir)
     # dataset = ["auto-gptq is an easy-to-use model quantization library with user-friendly apis, based on GPTQ algorithm."]
     # gptq_config = GPTQConfig(bits=4, dataset=dataset, tokenizer=tokenizer)
 
     # quantized_model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", quantization_config=gptq_config,cache_dir=custom_cache_dir)
 
-    custom_cache_dir = "/data4/share/xiaolong/switch_transformer"
+    custom_cache_dir = "/data4/share/pingzhi/switch_transformer"
     models = ["google/switch-base-8"]
 
     for model_name in models:

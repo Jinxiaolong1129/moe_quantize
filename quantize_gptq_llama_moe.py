@@ -1,10 +1,10 @@
 import sys
-sys.path.append("/home/LeiFeng/xiaolong/moe_quantize/optimum/")  # Add the path to Python's search path
+sys.path.append("/home/LeiFeng/pingzhi/moe_quantize/optimum/")  # Add the path to Python's search path
 print(sys.path)
 
 
 import os
-os.environ['HF_HOME'] = '/home/LeiFeng/xiaolong/moe_quantize/hf_cache'
+os.environ['HF_HOME'] = '/home/LeiFeng/pingzhi/moe_quantize/hf_cache'
 os.makedirs(os.environ['HF_HOME'], exist_ok=True)
 
 
@@ -52,7 +52,7 @@ for block_num in range(1, 28):
 w_bit = 4
 
 model_name = "llama-moe/LLaMA-MoE-v1-3_5B-2_8"
-quant_path = f'/home/LeiFeng/xiaolong/moe_quantize/quantized_LLaMA-MoE-v1-3_5B-2_8-gptq_w_bit_{w_bit}'
+quant_path = f'/home/LeiFeng/pingzhi/moe_quantize/quantized_LLaMA-MoE-v1-3_5B-2_8-gptq_w_bit_{w_bit}'
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.bfloat16, trust_remote_code=True)

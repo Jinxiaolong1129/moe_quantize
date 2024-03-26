@@ -6,7 +6,7 @@ set -e
 # Export environment variables common to all commands
 export DEBUG=0
 export CUDA_VISIBLE_DEVICES=1,2,3,4,5,6,7,0
-export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
+export PYTHONPATH=/home/LeiFeng/pingzhi/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/pingzhi/moe_quantize/auto_gptq/:$PYTHONPATH
 
 
 python lm_eval.py \

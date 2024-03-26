@@ -41,7 +41,7 @@ if is_accelerate_available():
 
 if is_auto_gptq_available():
     import sys
-    sys.path.append("/home/LeiFeng/xiaolong/moe_quantize/auto_gptq")  # Add the path to Python's search path
+    sys.path.append("/home/LeiFeng/pingzhi/moe_quantize/auto_gptq")  # Add the path to Python's search path
     print(sys.path)
 
     from auto_gptq import exllama_set_max_input_length

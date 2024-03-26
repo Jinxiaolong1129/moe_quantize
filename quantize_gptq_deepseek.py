@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/home/LeiFeng/xiaolong/moe_quantize/optimum/")  # Add the path to Python's search path
+sys.path.append("/home/LeiFeng/pingzhi/moe_quantize/optimum/")  # Add the path to Python's search path
 print(sys.path)
 
 
@@ -344,7 +344,7 @@ def main():
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
         level=logging.INFO,
         datefmt="%Y-%m-%d %H:%M:%S",
-        filename=f"/home/LeiFeng/xiaolong/moe_quantize/quantize_gptq_deepseek_{args.bits}.log"
+        filename=f"/home/LeiFeng/pingzhi/moe_quantize/quantize_gptq_deepseek_{args.bits}.log"
     )
         
 

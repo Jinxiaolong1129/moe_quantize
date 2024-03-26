@@ -16,19 +16,19 @@ w_bit = 4
 
 
 # model_path = "meta-llama/Llama-2-7b-chat-hf"
-model_path = '/data4/share/xiaolong/Llama-2-7b-chat-hf'
-quant_path = f'/data4/share/xiaolong/Llama-2-7b-chat-hf-awq-w_bit_{w_bit}'
+model_path = '/data4/share/pingzhi/Llama-2-7b-chat-hf'
+quant_path = f'/data4/share/pingzhi/Llama-2-7b-chat-hf-awq-w_bit_{w_bit}'
 
 
 # model_path = "google/switch-base-8"
-# custom_cache_dir = "/data4/share/xiaolong/switch_transformer"
-# quant_path = f'/data4/share/xiaolong/switch_transformer-w_bit_{w_bit}'
+# custom_cache_dir = "/data4/share/pingzhi/switch_transformer"
+# quant_path = f'/data4/share/pingzhi/switch_transformer-w_bit_{w_bit}'
 
 # model = AutoModelForSeq2SeqLM.from_pretrained(model_path, cache_dir=custom_cache_dir, device_map="auto")
 
 
 # model_path = 'llama-moe/LLaMA-MoE-v1-3_5B-2_8'
-# quant_path = f'/data4/share/xiaolong/llama-moe/LLaMA-MoE-v1-3_5B-2_8-w_bit_{w_bit}'
+# quant_path = f'/data4/share/pingzhi/llama-moe/LLaMA-MoE-v1-3_5B-2_8-w_bit_{w_bit}'
 # custom_cache_dir = "/data3/user/jin509/llama-moe"
 
 

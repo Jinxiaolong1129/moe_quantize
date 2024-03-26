@@ -1,10 +1,10 @@
 import sys
-sys.path.append("/home/LeiFeng/xiaolong/moe_quantize/optimum/")  # Add the path to Python's search path
+sys.path.append("/home/LeiFeng/pingzhi/moe_quantize/optimum/")  # Add the path to Python's search path
 # print(sys.path)
 
 
 import os
-os.environ['HF_HOME'] = '/home/LeiFeng/xiaolong/moe_quantize/hf_cache'
+os.environ['HF_HOME'] = '/home/LeiFeng/pingzhi/moe_quantize/hf_cache'
 os.makedirs(os.environ['HF_HOME'], exist_ok=True)
 
 
@@ -358,7 +358,7 @@ def main():
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
         level=logging.INFO,
         datefmt="%Y-%m-%d %H:%M:%S",
-        filename=f"/home/LeiFeng/xiaolong/moe_quantize/quantize_gptq_deepseek_{args.bits}.log"
+        filename=f"/home/LeiFeng/pingzhi/moe_quantize/quantize_gptq_deepseek_{args.bits}.log"
     )
         
 
@@ -527,5 +527,5 @@ if __name__ == "__main__":
     
     
 # /home/LeiFeng/pingzhi/smoothquant/smoothquant/lm_eval
-# cp -r /home/LeiFeng/pingzhi/smoothquant/smoothquant/lm_eval /home/LeiFeng/xiaolong/moe_quantize
-# cp -r /home/LeiFeng/pingzhi/smoothquant/smoothquant/lm_eval.py /home/LeiFeng/xiaolong/moe_quantize
+# cp -r /home/LeiFeng/pingzhi/smoothquant/smoothquant/lm_eval /home/LeiFeng/pingzhi/moe_quantize
+# cp -r /home/LeiFeng/pingzhi/smoothquant/smoothquant/lm_eval.py /home/LeiFeng/pingzhi/moe_quantize

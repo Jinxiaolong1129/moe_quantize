@@ -1,5 +1,5 @@
 import os
-os.environ['HF_HOME'] = '/home/LeiFeng/xiaolong/moe_quantize/hf_cache'
+os.environ['HF_HOME'] = '/home/LeiFeng/pingzhi/moe_quantize/hf_cache'
 os.makedirs(os.environ['HF_HOME'], exist_ok=True)
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '3,4,5,6,7'
@@ -22,7 +22,7 @@ if __name__ == "__main__":
         group_size = args.group_size
 
         model_path = "mistralai/Mixtral-8x7B-v0.1"
-        quant_path = f'/home/LeiFeng/xiaolong/moe_quantize/quantized_mistral-instruct-v0.2-awq-w_bit.{w_bit}-group_size.{group_size}'
+        quant_path = f'/home/LeiFeng/pingzhi/moe_quantize/quantized_mistral-instruct-v0.2-awq-w_bit.{w_bit}-group_size.{group_size}'
 
         quant_config = { "zero_point": True, "q_group_size": group_size, "w_bit": w_bit, "version": "GEMM" }
 

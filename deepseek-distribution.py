@@ -103,7 +103,7 @@ def deepseek_routing_top_trace(
 def visual_deepseek_routing_top_trace(
     save_dir: str,
 ):
-    file_path = '/home/LeiFeng/xiaolong/moe_quantize/save/routing-count.pt'
+    file_path = '/home/LeiFeng/pingzhi/moe_quantize/save/routing-count.pt'
     expert_routed_distribution = torch.load(file_path, map_location=torch.device('cpu')).numpy()
 
     num_hidden_layers = expert_routed_distribution.shape[0]

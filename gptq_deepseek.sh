@@ -4,7 +4,7 @@
 # conda activate autoawq
 
 
-export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
+export PYTHONPATH=/home/LeiFeng/pingzhi/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/pingzhi/moe_quantize/auto_gptq/:$PYTHONPATH
 export CUDA_VISIBLE_DEVICES=0
 export DEBUG=0
 python quantize_gptq_deepseek.py \
@@ -16,7 +16,7 @@ python quantize_gptq_deepseek.py \
 
 
 export DEBUG=0
-export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
+export PYTHONPATH=/home/LeiFeng/pingzhi/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/pingzhi/moe_quantize/auto_gptq/:$PYTHONPATH
 export CUDA_VISIBLE_DEVICES=1
 python quantize_gptq_deepseek.py \
     --model_name deepseek-ai/deepseek-moe-16b-chat \
@@ -27,7 +27,7 @@ python quantize_gptq_deepseek.py \
 
 export DEBUG=0
 export CUDA_VISIBLE_DEVICES=2
-export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
+export PYTHONPATH=/home/LeiFeng/pingzhi/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/pingzhi/moe_quantize/auto_gptq/:$PYTHONPATH
 python quantize_gptq_deepseek.py \
     --model_name deepseek-ai/deepseek-moe-16b-chat \
     --nsamples 512 \
@@ -38,7 +38,7 @@ python quantize_gptq_deepseek.py \
 
 export DEBUG=0
 export CUDA_VISIBLE_DEVICES=3
-export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
+export PYTHONPATH=/home/LeiFeng/pingzhi/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/pingzhi/moe_quantize/auto_gptq/:$PYTHONPATH
 python quantize_gptq_deepseek.py \
     --model_name deepseek-ai/deepseek-moe-16b-chat \
     --nsamples 512 \
@@ -49,7 +49,7 @@ python quantize_gptq_deepseek.py \
 
 export DEBUG=0
 export CUDA_VISIBLE_DEVICES=6
-export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
+export PYTHONPATH=/home/LeiFeng/pingzhi/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/pingzhi/moe_quantize/auto_gptq/:$PYTHONPATH
 python quantize_gptq_deepseek.py \
     --model_name deepseek-ai/deepseek-moe-16b-chat \
     --nsamples 512 \
@@ -60,7 +60,7 @@ python quantize_gptq_deepseek.py \
 
 export DEBUG=0
 export CUDA_VISIBLE_DEVICES=7
-export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
+export PYTHONPATH=/home/LeiFeng/pingzhi/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/pingzhi/moe_quantize/auto_gptq/:$PYTHONPATH
 python quantize_gptq_deepseek.py \
     --model_name deepseek-ai/deepseek-moe-16b-chat \
     --nsamples 512 \
@@ -72,7 +72,7 @@ python quantize_gptq_deepseek.py \
 
 export DEBUG=0
 export CUDA_VISIBLE_DEVICES=0
-export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
+export PYTHONPATH=/home/LeiFeng/pingzhi/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/pingzhi/moe_quantize/auto_gptq/:$PYTHONPATH
 python quantize_gptq_deepseek.py \
     --model_name deepseek-ai/deepseek-moe-16b-chat \
     --nsamples 512 \
@@ -83,7 +83,7 @@ python quantize_gptq_deepseek.py \
 
 export DEBUG=0
 export CUDA_VISIBLE_DEVICES=1
-export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
+export PYTHONPATH=/home/LeiFeng/pingzhi/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/pingzhi/moe_quantize/auto_gptq/:$PYTHONPATH
 python quantize_gptq_deepseek.py \
     --model_name deepseek-ai/deepseek-moe-16b-chat \
     --nsamples 512 \
@@ -93,7 +93,7 @@ python quantize_gptq_deepseek.py \
 
 export DEBUG=0
 export CUDA_VISIBLE_DEVICES=2
-export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
+export PYTHONPATH=/home/LeiFeng/pingzhi/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/pingzhi/moe_quantize/auto_gptq/:$PYTHONPATH
 python quantize_gptq_deepseek.py \
     --model_name deepseek-ai/deepseek-moe-16b-chat \
     --nsamples 512 \
