@@ -168,3 +168,9 @@ cython_debug/
 **/*.pyc
 *.json
 __pycache__
+
+awq_quantize_model/
+autogptq_quantize_model/
+data/
+hf_cache/
+save/

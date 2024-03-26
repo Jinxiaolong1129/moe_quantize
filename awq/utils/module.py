@@ -1,11 +1,16 @@
 import torch.nn as nn
 
 
+# def get_named_linears(module):
+#     if module.is_decoder:
+#         return {name: m for name, m in module.named_modules() if isinstance(m, nn.Linear)}
+#     else:
+#         return {name: m for name, m in module.named_modules() if isinstance(m, nn.Linear)}
+    
+    
 def get_named_linears(module):
-    if module.is_decoder:
-        return {name: m for name, m in module.named_modules() if isinstance(m, nn.Linear)}
-    else:
-        return {name: m for name, m in module.named_modules() if isinstance(m, nn.Linear)}
+    return {name: m for name, m in module.named_modules() if isinstance(m, nn.Linear)}
+
 
 
 def get_op_by_name(module, op_name):

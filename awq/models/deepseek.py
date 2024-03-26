@@ -7,11 +7,10 @@ from .base import BaseAWQForCausalLM
 # )
 
 
-class DeepseekAWQForCausalLM(BaseAWQForCausalLM):
+class DeepSeekAWQForCausalLM(BaseAWQForCausalLM):
     # NOTE (xiaolong): This is a custom model, so we need to define the model type in layer_type, you can check mixtral
     layer_type = "LlamaDecoderLayer"
     max_seq_len_key = "max_position_embeddings"
-
 
     @staticmethod
     def get_model_layers(model):
@@ -31,6 +30,8 @@ class DeepseekAWQForCausalLM(BaseAWQForCausalLM):
         # NOTE (xiaolong): define the layers for scaling, and the input_feat is the input feature for the model, layers contains the order of the layers in the model
         # NOTE (xiaolong): you can refer to mixtral code here
         # NOTE (xiaolong): deepseek, mixtral, and llama-moe are CausalLM, so the layers are similar, easier to do
+        
+        # deepseek first layer is non-moe based model, so we need to define the layers for the first layer
         layers = []
 
         # attention input

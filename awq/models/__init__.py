@@ -16,4 +16,5 @@ from .mixtral import MixtralAWQForCausalLM
 from .qwen2 import Qwen2AWQForCausalLM
 from .switch import SwitchAWQ
 from .llama_moe import LlamaMOEAWQForCausalLM
+from .deepseek import DeepSeekAWQForCausalLM
 # LlamaMOEForCausalLM

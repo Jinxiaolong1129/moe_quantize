@@ -115,8 +115,7 @@ class AwqQuantizer:
         return w
 
     def quantize(self):
-        # TODO (xiaolong): 对每个module 开始顺序quantize
-        # TODO (xiaolong): decoder works well, switch transformer may need to change
+        # NOTE (xiaolong): 对每个module 开始顺序quantize
         for i in tqdm(range(len(self.modules)), desc="AWQ"):
             # Move module and inputs to correct device
             common_device = next(self.modules[i].parameters()).device
@@ -144,7 +143,6 @@ class AwqQuantizer:
             # [STEP 1]: Get layer, extract linear modules, extract input features
 
 
-            # TODO (xiaolong): for switch transformer, may need change
             named_linears = get_named_linears(self.modules[i]) #  get linear layers ## here
 
             # Filter out the linear layers we don't want to exclude
@@ -157,7 +155,6 @@ class AwqQuantizer:
             clear_memory()
 
             # NOTE (xioalong): AWQ algorithm
-
             # [STEP 2]: Compute and apply scale list. # important
             module_config: List[Dict] = self.awq_model.get_layers_for_scaling(
                 self.modules[i], input_feat, self.module_kwargs
@@ -444,7 +441,7 @@ class AwqQuantizer:
 
         return best_max_val.squeeze(1)
 
-    def init_quant(self, n_samples=32, seqlen=512): # n_samples=128, seqlen=512
+    def init_quant(self, n_samples=128, seqlen=512): # n_samples=128, seqlen=512
 
         # TODO (xiaolong): get modules here
         modules = self.awq_model.get_model_layers(self.model)
@@ -459,7 +456,9 @@ class AwqQuantizer:
         )
         # TODO (xiaolong): now, just support decoder part
         samples = torch.cat(samples, dim=0) # [65 512]
-
+        print(f'sample.shape {samples.shape}')
+        logging.info(f"Calibration dataset shape: {samples.shape}")
+        
         inps = []
         layer_kwargs = {}
 
@@ -532,7 +531,7 @@ class AwqQuantizer:
                 **named_linears,
                 "block_sparse_moe": layer.block_sparse_moe,
             }
-
+        # NOTE add support for deepseek
 
         # use hook to get input features
         # TODO (xiaolong) get output as next layer's input
@@ -1091,7 +1090,7 @@ class AwqQuantizerForSeq2SeqLM:
 
         return best_max_val.squeeze(1)
 
-    def init_quant(self, n_samples=8, seqlen=512): # TODO n_samples=128, seqlen=512
+    def init_quant(self, n_samples=128, seqlen=512): # TODO n_samples=128, seqlen=512
 
         # TODO (xiaolong): get modules here
         # modules = self.awq_model.get_model_layers(self.model)

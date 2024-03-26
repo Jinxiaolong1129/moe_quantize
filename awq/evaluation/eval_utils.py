@@ -54,7 +54,7 @@ def evaluate_perplexity(model, tokenizer):
             progress_bar.set_description(f"Perplexity {curr_ppl:.3f}")
 
     ppl = _perplexity(nlls, n_samples, seqlen)
-
+    print(f"Perplexity: {ppl:.3f}")
     return ppl.item()
 
 

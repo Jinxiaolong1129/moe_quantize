@@ -25,6 +25,7 @@ AWQ_CAUSAL_LM_MODEL_MAP = {
     "qwen2": Qwen2AWQForCausalLM,
     "switch_transformers": SwitchAWQ,
     "llama_moe": LlamaMOEAWQForCausalLM,
+    'deepseek': DeepSeekAWQForCausalLM,
 }
 
 

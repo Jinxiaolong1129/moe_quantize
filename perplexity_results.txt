@@ -1,0 +1,11 @@
+deepseek-ai/deepseek-moe-16b-chat | full precision | 8.048336651458008
+autogptq_quantize_model/deepseek-moe-16b-chat-gptq_w_bit_moe.shared_4.other.2+other_block_4 | moe.shared_4.other.2+other_block_4 | 13.278473877631393
+autogptq_quantize_model/deepseek-moe-16b-chat-gptq_w_bit_moe.all_mlp.2+other_block.4 | moe.all_mlp.2+other_block.4 | 20.201795459961918
+autogptq_quantize_model/deepseek-moe-16b-chat-gptq_w_bit_all_8 | all_8 | 8.048347839204695
+autogptq_quantize_model/deepseek-moe-16b-chat-gptq_w_bit_moe.all_mlp.4+other_block.8 | moe.all_mlp.4+other_block.8 | 8.156745341313476
+autogptq_quantize_model/deepseek-moe-16b-chat-gptq_w_bit_moe.shared_2.other.4+other_block_4 | moe.shared_2.other.4+other_block_4 | 11.158562808802978
+autogptq_quantize_model/deepseek-moe-16b-chat-gptq_w_bit_moe.shared_4.other.2+other_block.8 | moe.shared_4.other.2+other_block.8 | 10.85433284523658
+autogptq_quantize_model/deepseek-moe-16b-chat-gptq_w_bit_all_4 | all_4 | 8.29253929407541
+autogptq_quantize_model/deepseek-moe-16b-chat-gptq_w_bit_moe.shared_2.other.4+other_block.8 | moe.shared_2.other.4+other_block.8 | 13.08055991472027
+autogptq_quantize_model/deepseek-moe-16b-chat-gptq_w_bit_moe.shared_2.other.4+other_block.8 | moe.shared_2.other.4+other_block.8 | 13.08055991472027
+autogptq_quantize_model/deepseek-moe-16b-chat-gptq_w_bit_all_2 | all_2 | 21

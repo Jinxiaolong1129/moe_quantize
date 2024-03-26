@@ -1,6 +1,13 @@
+import os
+
+import sys
+print(sys.path)
+
 import argparse
 from lm_eval import evaluator
 from awq import AutoAWQForCausalLM
+from transformers import AutoModelForCausalLM, AutoTokenizer, MixtralForCausalLM
+
 from transformers import AutoTokenizer
 from awq.evaluation import (
     evaluate_perplexity,
@@ -12,7 +19,7 @@ from awq.evaluation import (
 
 def run_eval(
         model_path, quant_file, device, tasks, task_batch_size, task_n_shot,
-        task_use_pretrained, pretrained_safetensors
+        task_use_pretrained, pretrained_safetensors, args
     ):
     """
     Post quantization: Evaluate perplexity on wikitext with EleutherAI Evaluation Harness
@@ -21,17 +28,25 @@ def run_eval(
 
     # Load model
     if len(tasks) == 1 and tasks[0] != "mmlu" and tasks[0] != "librispeech":
-        if task_use_pretrained:
-            model = AutoAWQForCausalLM.from_pretrained(model_path, safetensors=pretrained_safetensors)
-        else:
-            model = AutoAWQForCausalLM.from_quantized(model_path, quant_file, fuse_layers=False)
+        if not args.is_quantized:
+            print(f'Loading original model from {model_path}')
+            tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+            model = AutoModelForCausalLM.from_pretrained(model_path)
+        else: 
+            if task_use_pretrained:
+                model = AutoAWQForCausalLM.from_pretrained(model_path, safetensors=pretrained_safetensors)
+            else:
+                model = AutoAWQForCausalLM.from_quantized(model_path, quant_file, fuse_layers=False)
 
-        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+            tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
     # Load adapter
     if len(tasks) == 1 and tasks[0] == 'wikitext':
-        evaluate_perplexity(model.model, tokenizer)
-    
+        if args.model_path == 'mistralai/Mixtral-8x7B-v0.1':
+            average_ppl = evaluate_perplexity(model, tokenizer)
+        else:
+            average_ppl = evaluate_perplexity(model.model, tokenizer)
+            
     elif len(tasks) == 1 and tasks[0] == 'librispeech':
         eval_librispeech(model_path)
     
@@ -56,6 +71,15 @@ def run_eval(
 
         print(evaluator.make_table(results))
 
+
+    ppl_log = f'{args.model_path} |'
+    
+    file_path = 'awq_perplexity_results.txt'  # Specify your desired file path here
+    with open(file_path, 'a') as file:  # Open file in append mode
+        file.write(f'{ppl_log} | {average_ppl}\n')  # Write all_perplexity to the file, followed by a newline
+
+    print(f'Perplexity value {average_ppl} has been added to {file_path}.')
+
 if __name__ == '__main__':
     """
     - Run perplexity of quantized model:
@@ -71,6 +95,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', type=str, help='Path to hf model')
     parser.add_argument('--quant_file', default='', type=str, help='Path to quantized AWQ model file')
+    parser.add_argument("--is_quantized", action="store_true", help="Is the model GPTQ quantized?")
     parser.add_argument('--device', type=str, default='cuda:7', help='Device to load model to')
     parser.add_argument("--use_pretrained", default=False, action='store_true',
                         help="Pass '--use_pretrained' to use a pretrained model running FP16")
@@ -86,8 +111,18 @@ if __name__ == '__main__':
     run_eval(
         args.model_path, args.quant_file, args.device,
         args.tasks, args.batch_size, args.n_shot, args.use_pretrained,
-        args.pretrained_safetensors
+        args.pretrained_safetensors, args
     )
     
 
-# python examples/eval.py --model_path casperhansen/mistral-7b-instruct-v0.1-awq
+# python examples/eval.py --model_path quantized_mistral-instruct-v0.2-awq-w_bit.2-group_size.64 --is_quantized
+
+# python examples/eval.py --model_path quantized_mistral-instruct-v0.2-awq-w_bit.4-group_size.64  --is_quantized
+
+# python examples/eval.py --model_path quantized_mistral-instruct-v0.2-awq-w_bit.8-group_size.64 --is_quantized
+
+# python examples/eval.py --model_path quantized_mistral-instruct-v0.2-awq-w_bit.2-group_size.128 --is_quantized
+
+# python examples/eval.py --model_path quantized_mistral-instruct-v0.2-awq-w_bit.4-group_size.128 --is_quantized
+
+# python examples/eval.py --model_path mistralai/Mixtral-8x7B-v0.1
