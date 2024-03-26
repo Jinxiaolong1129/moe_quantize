@@ -49,7 +49,7 @@ def mixtral_quantize_config(args):
                 key = f"block_sparse_moe.experts.{i}.{part}"
                 moe_block_bit_dict[key] = 4
 
-        mixtral_bit = {}
+        mixtral_bit = dict()
 
         for block_num in range(0, 32):
             for layer in moe_block_bit_dict:
@@ -70,7 +70,7 @@ def mixtral_quantize_config(args):
                 key = f"block_sparse_moe.experts.{i}.{part}"
                 moe_block_bit_dict[key] = 2
 
-        mixtral_bit = {}
+        mixtral_bit = dict()
 
         for block_num in range(0, 32):
             for layer in moe_block_bit_dict:
@@ -91,7 +91,7 @@ def mixtral_quantize_config(args):
                 key = f"block_sparse_moe.experts.{i}.{part}"
                 moe_block_bit_dict[key] = 8
 
-        mixtral_bit = {}
+        mixtral_bit = dict()
 
         for block_num in range(0, 32):
             for layer in moe_block_bit_dict:
