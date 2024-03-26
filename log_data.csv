@@ -1,0 +1,10 @@
+Bits,MoE Average Bit,Self-Attention Average Bit,Average Bit
+all_2,2.0,2.0,2.0
+all_4,4.0,4.0,4.0
+all_8,8.0,8.0,8.0
+moe.all_mlp.2+other_block.4,2.0,4.0,2.0673245199615478
+moe.shared_4.other.2+other_block_4,2.0606060606060606,4.0,2.1258904435990766
+moe.shared_2.other.4+other_block_4,3.9393939393939394,4.0,3.941434076362471
+moe.all_mlp.4+other_block.8,4.0,8.0,4.1346490399230955
+moe.shared_4.other.2+other_block.8,3.9393939393939394,8.0,4.076083116285567
+moe.shared_2.other.4+other_block.8,2.0606060606060606,8.0,2.2605394835221717

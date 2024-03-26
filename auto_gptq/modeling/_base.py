@@ -54,6 +54,7 @@ from ._utils import (
     get_module_by_name_prefix,
     get_module_by_name_suffix,
     make_quant,
+    make_quant_mixed,
     make_sure_no_tensor_in_meta_device,
     move_to_device,
     pack_from_tensors,
@@ -2380,7 +2381,7 @@ class BaseGPTQForCausalLM_mixed_precision(nn.Module, PushToHubMixin):
                             logger.info(f"The layer {name} is not quantized.")
                             del layers[name]
 
-                make_quant(
+                make_quant_mixed(
                     model,
                     layers,
                     quantize_config.bits,

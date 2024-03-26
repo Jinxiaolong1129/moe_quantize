@@ -15,7 +15,7 @@ from datasets import load_dataset
 
 from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig, AutoGPTQForCausalLM_mixed_precision, BaseQuantizeConfig_mixed_precision
 import logging
-
+import csv
 
 def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
     if split == "train":
@@ -328,6 +328,7 @@ def moe_quantize_config(args):
     
     raise ValueError("Invalid bits")
 
+
 def main():
     parser = ArgumentParser()
     parser.add_argument("--bits", type=str)
@@ -381,7 +382,88 @@ def main():
     logging.info(f"Quantized model saved to {quant_path}")
 
 
+def average_bit():
+    parser = ArgumentParser()
+    parser.add_argument("--bits", type=str, default='moe.all_mlp.2+other_block.4')
+    parser.add_argument("--model_name", type=str, default='deepseek-ai/deepseek-moe-16b-base')
+    
+    args = parser.parse_args()
+    args_dict = vars(args)
+    logging.info("Command-line arguments: %s", args_dict)
 
+    model_name = args.model_name    
+    model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.float16, trust_remote_code=True)
+    
+    log_data = []
+    
+    for bits in ['all_2', 'all_4', 'all_8', 'moe.all_mlp.2+other_block.4', 
+                'moe.shared_4.other.2+other_block_4', 'moe.shared_2.other.4+other_block_4', 
+                'moe.all_mlp.4+other_block.8', 'moe.shared_4.other.2+other_block.8', 
+                'moe.shared_2.other.4+other_block.8']:
+        args.bits = bits
+        
+        deeepseek_bit = moe_quantize_config(args)
+        
+        total_bits_moe = 0
+        total_params_moe = 0
+        total_bits_self_attn = 0
+        total_params_self_attn = 0
+        total_bits = 0
+        total_params = 0
+        
+        for name, module in model.named_modules():
+            if hasattr(module, 'weight'):
+                weight = module.weight.data
+                num_params = weight.numel()  # Total number of parameters in the module
+                
+                if name in deeepseek_bit:
+                    bit = deeepseek_bit[name]
+                    total_bits += num_params * bit  # Accumulate total bits for all specified modules
+                    total_params += num_params
+                if ('experts' in name or 'shared_experts' in name) and name in deeepseek_bit:
+                    bit = deeepseek_bit[name]
+                    total_bits_moe += num_params * bit
+                    total_params_moe += num_params
+                elif 'self_attn' in name and name in deeepseek_bit:
+                    bit = deeepseek_bit[name]
+                    total_bits_self_attn += num_params * bit
+                    total_params_self_attn += num_params
+
+        # Calculate average bits
+        average_bit_moe = total_bits_moe / total_params_moe if total_params_moe > 0 else 0
+        average_bit_self_attn = total_bits_self_attn / total_params_self_attn if total_params_self_attn > 0 else 0
+        average_bit = total_bits / total_params if total_params > 0 else 0
+        print(f"Bits: {bits}")
+        print(f"MoE Average Bit: {average_bit_moe}")
+        print(f"Self-Attention Average Bit: {average_bit_self_attn}")
+        print(f"Average Bit: {average_bit}")
+        print('=========================')
+        
+        data = {
+            "Bits": bits,
+            "MoE Average Bit": average_bit_moe,
+            "Self-Attention Average Bit": average_bit_self_attn,
+            "Average Bit": average_bit
+        }
+        
+        # Add the data to the list
+        log_data.append(data)
+    
+    fieldnames = ["Bits", "MoE Average Bit", "Self-Attention Average Bit", "Average Bit"]
+
+    # Open a CSV file to write the data
+    with open('log_data.csv', 'w', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        # Write the header
+        writer.writeheader()
+        
+        # Write the log data
+        writer.writerows(log_data)
+
+    print("Log data has been saved to log_data.csv.")
+    
+    
 if __name__ == "__main__":
-
+    # average_bit()
     main()
