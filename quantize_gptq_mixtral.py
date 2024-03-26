@@ -124,7 +124,9 @@ def main():
     logging.info("Command-line arguments: %s", args_dict)
 
     model_name = args.model_name
-    quant_path = f'autogptq_{model_name}-gptq_w_bit_{args.bits}'
+    quant_path = f'autogptq_{model_name}-gptq_w_bit_{args.all_bits}' if args.all_bits is not None else (
+        f'autogptq_{model_name}-gptq_w_bit_{args.bits}'
+    )
     quantized_model_file_base_name = f'{model_name.split("/")[-1]}-gptq_w_bit_{args.bits}'
 
     if args.all_bits is not None:
