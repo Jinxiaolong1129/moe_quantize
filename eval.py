@@ -94,4 +94,9 @@ if __name__ == '__main__':
     )
     
 
-# python eval.py --model_path /data4/share/xiaolong/Llama-2-7b-chat-hf-awq-w_bit_2
+# python eval.py --model_path /data4/share/xiaolong/Llama-2-7b-chat-hf-awq-w_bit_2\
+    
+    
+    
+# git config user.name "Jinxiaolong1129"
+# git config user.email "jinxiaolong1129@gmail.com"
