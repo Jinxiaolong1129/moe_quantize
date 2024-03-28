@@ -23,7 +23,7 @@ LM_EVAL_TASK_KWARGS_DICT = {
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Calculate Perplexity for a model.")
-    parser.add_argument("--model_name", type=str, default='deepseek-ai/deepseek-moe-16b-chat')
+    parser.add_argument("--model_name", type=str, default='mistralai/Mixtral-8x7B-v0.1')
     parser.add_argument("--quant_model_path", type=str)
     parser.add_argument("--bits", type=str)
     parser.add_argument(
@@ -52,7 +52,7 @@ if __name__ == "__main__":
         max_memory = None
 
     model = AutoAWQForCausalLM.from_quantized(
-        args.model_name, args.quant_model_path, fuse_layers=False
+        args.quant_model_path, fuse_layers=False, device_map="auto", trust_remote_code=True
     )
 
     save_file_path = os.path.join(f"{args.quant_model_path.split('/')[0]}",
