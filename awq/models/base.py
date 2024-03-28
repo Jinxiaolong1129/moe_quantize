@@ -1,17 +1,31 @@
-import os
 import gc
 import json
-import torch
-import transformers
-import torch.nn as nn
-
-from tqdm import tqdm
+import os
 from typing import List, Union, Dict
-from safetensors.torch import save_file
-from typing_extensions import Doc, Annotated
-from huggingface_hub import snapshot_download
-from transformers.modeling_utils import shard_checkpoint
 
+import torch
+import torch.nn as nn
+import transformers
+from accelerate.big_modeling import (
+    init_empty_weights,
+    load_checkpoint_and_dispatch,
+)
+from huggingface_hub import snapshot_download
+from safetensors.torch import save_file
+from tqdm import tqdm
+from transformers import (
+    AutoConfig,
+    PreTrainedModel,
+    PretrainedConfig,
+    AutoProcessor,
+    CLIPImageProcessor,
+    PreTrainedTokenizer,
+)
+from transformers.modeling_utils import shard_checkpoint
+from typing_extensions import Doc, Annotated
+
+from awq.models._config import AwqConfig
+from awq.modules.act import ScaledActivation
 from awq.modules.linear import (
     WQLinear_GEMM,
     WQLinear_GEMV,
@@ -23,27 +37,10 @@ from awq.modules.linear import (
     exllama_post_init,
     exllamav2_post_init,
 )
+from awq.quantize.quantizer import AwqQuantizer, AwqQuantizerForSeq2SeqLM
 from awq.utils.module import (
-    get_named_linears,
-    set_op_by_name,
     exclude_layers_to_not_quantize,
 )
-from transformers import (
-    AutoConfig,
-    PreTrainedModel,
-    PretrainedConfig,
-    AutoProcessor,
-    CLIPImageProcessor,
-    PreTrainedTokenizer,
-)
-from accelerate.big_modeling import (
-    init_empty_weights,
-    load_checkpoint_and_dispatch,
-)
-
-from awq.models._config import AwqConfig
-from awq.modules.act import ScaledActivation
-from awq.quantize.quantizer import AwqQuantizer, AwqQuantizerForSeq2SeqLM
 from awq.utils.module import get_named_linears, set_op_by_name
 
 # Since we support different `AutoModelForxxx` from transformers
@@ -75,19 +72,19 @@ TRANSFORMERS_AUTO_MAPPING_DICT = {
 
 class BaseAWQForCausalLM(nn.Module):
     def __init__(
-        self,
-        model: Annotated[PreTrainedModel, Doc("The pretrained or quantized model.")],
-        model_type: Annotated[str, Doc("The model type, found in config.json.")],
-        is_quantized: Annotated[
-            bool, Doc("Indicates if the current model is quantized.")
-        ],
-        config: Annotated[PretrainedConfig, Doc("The config of the model.")],
-        quant_config: Annotated[
-            AwqConfig, Doc("The quantization config of the model.")
-        ],
-        processor: Annotated[
-            AutoProcessor, Doc("An optional processor, e.g. for vision models.")
-        ],
+            self,
+            model: Annotated[PreTrainedModel, Doc("The pretrained or quantized model.")],
+            model_type: Annotated[str, Doc("The model type, found in config.json.")],
+            is_quantized: Annotated[
+                bool, Doc("Indicates if the current model is quantized.")
+            ],
+            config: Annotated[PretrainedConfig, Doc("The config of the model.")],
+            quant_config: Annotated[
+                AwqConfig, Doc("The quantization config of the model.")
+            ],
+            processor: Annotated[
+                AutoProcessor, Doc("An optional processor, e.g. for vision models.")
+            ],
     ):
         """The base model for all AutoAWQ models."""
         super().__init__()
@@ -98,6 +95,13 @@ class BaseAWQForCausalLM(nn.Module):
         self.config: PretrainedConfig = config
         self.quant_config: AwqConfig = quant_config
         self.processor: CLIPImageProcessor = processor
+
+    def __getattr__(self, name: str):
+        """Forward missing attributes to the wrapped module."""
+        try:
+            return super().__getattr__(name)  # defer to nn.Module's logic
+        except AttributeError:
+            return getattr(self.model, name)
 
     def to(self, device: Annotated[str, Doc("The device to move your model to.")]):
         """A utility function for moving the model to a device."""
@@ -114,30 +118,30 @@ class BaseAWQForCausalLM(nn.Module):
 
     @torch.no_grad()
     def quantize(
-        self,
-        tokenizer: Annotated[
-            PreTrainedTokenizer, Doc("The tokenizer to use for quantization.")
-        ] = None,
-        quant_config: Annotated[
-            Dict, Doc("The quantization config you want to use.")
-        ] = {},
-        calib_data: Annotated[
-            Union[str, List[str]],
-            Doc(
-                "The calibration dataset. Either a string pointing to Huggingface or a list of preloaded examples."
-            ),
-        ] = "pileval",
-        split: Annotated[str, Doc("The split of calib_data.")] = "train",
-        text_column: Annotated[str, Doc("The text column of calib_data.")] = "text",
-        duo_scaling: Annotated[
-            bool, Doc("Whether to scale using both w/x or just x.")
-        ] = True,
-        export_compatible: Annotated[
-            bool,
-            Doc(
-                "This argument avoids real quantization by only applying the scales without quantizing down to FP16."
-            ),
-        ] = False,
+            self,
+            tokenizer: Annotated[
+                PreTrainedTokenizer, Doc("The tokenizer to use for quantization.")
+            ] = None,
+            quant_config: Annotated[
+                Dict, Doc("The quantization config you want to use.")
+            ] = {},
+            calib_data: Annotated[
+                Union[str, List[str]],
+                Doc(
+                    "The calibration dataset. Either a string pointing to Huggingface or a list of preloaded examples."
+                ),
+            ] = "pileval",
+            split: Annotated[str, Doc("The split of calib_data.")] = "train",
+            text_column: Annotated[str, Doc("The text column of calib_data.")] = "text",
+            duo_scaling: Annotated[
+                bool, Doc("Whether to scale using both w/x or just x.")
+            ] = True,
+            export_compatible: Annotated[
+                bool,
+                Doc(
+                    "This argument avoids real quantization by only applying the scales without quantizing down to FP16."
+                ),
+            ] = False,
     ):
         """
         The main quantization function that you can use to quantize your model.
@@ -166,7 +170,7 @@ class BaseAWQForCausalLM(nn.Module):
             self,
             self.model,
             tokenizer,
-            self.quant_config.w_bit, # TODO mixed should be a list
+            self.quant_config.w_bit,  # TODO mixed should be a list
             self.quant_config.q_group_size,
             self.quant_config.zero_point,
             self.quant_config.version,
@@ -207,14 +211,14 @@ class BaseAWQForCausalLM(nn.Module):
         pass
 
     def save_quantized(
-        self,
-        save_dir: Annotated[str, Doc("The directory to save your model to.")],
-        safetensors: Annotated[
-            bool, Doc("Whether to save the model as safetensors or torch files.")
-        ] = True,
-        shard_size: Annotated[
-            str, Doc("The shard size for sharding large models into multiple chunks.")
-        ] = "5GB",
+            self,
+            save_dir: Annotated[str, Doc("The directory to save your model to.")],
+            safetensors: Annotated[
+                bool, Doc("Whether to save the model as safetensors or torch files.")
+            ] = True,
+            shard_size: Annotated[
+                str, Doc("The shard size for sharding large models into multiple chunks.")
+            ] = "5GB",
     ):
         save_dir = save_dir[:-1] if save_dir[-1] == "/" else save_dir
 
@@ -269,36 +273,36 @@ class BaseAWQForCausalLM(nn.Module):
 
     @classmethod
     def from_pretrained(
-        self,
-        model_path: Annotated[str, Doc("A Huggingface path or local path to a model.")],
-        model_type: Annotated[str, Doc("The model type, loaded from config.json.")],
-        torch_dtype: Annotated[
-            torch.dtype,
-            Doc(
-                "The dtype to load the model as. May not work with other values than float16."
-            ),
-        ] = torch.float16,
-        trust_remote_code: Annotated[
-            bool,
-            Doc(
-                "Useful for Huggingface repositories that have not been integrated into transformers yet."
-            ),
-        ] = True,
-        safetensors: Annotated[
-            bool, Doc("Whether to download/load safetensors instead of torch weights.")
-        ] = True,
-        device_map: Annotated[
-            Union[str, Dict],
-            Doc(
-                "A device map that will be passed onto the model loading method from transformers."
-            ),
-        ] = None,
-        **model_init_kwargs: Annotated[
-            Dict,
-            Doc(
-                "Additional kwargs that are passed to the model during initialization."
-            ),
-        ],
+            self,
+            model_path: Annotated[str, Doc("A Huggingface path or local path to a model.")],
+            model_type: Annotated[str, Doc("The model type, loaded from config.json.")],
+            torch_dtype: Annotated[
+                torch.dtype,
+                Doc(
+                    "The dtype to load the model as. May not work with other values than float16."
+                ),
+            ] = torch.float16,
+            trust_remote_code: Annotated[
+                bool,
+                Doc(
+                    "Useful for Huggingface repositories that have not been integrated into transformers yet."
+                ),
+            ] = True,
+            safetensors: Annotated[
+                bool, Doc("Whether to download/load safetensors instead of torch weights.")
+            ] = True,
+            device_map: Annotated[
+                Union[str, Dict],
+                Doc(
+                    "A device map that will be passed onto the model loading method from transformers."
+                ),
+            ] = None,
+            **model_init_kwargs: Annotated[
+                Dict,
+                Doc(
+                    "Additional kwargs that are passed to the model during initialization."
+                ),
+            ],
     ):
         """A method for initialization of pretrained models, usually in FP16."""
         # Get weights path and quant config
@@ -337,61 +341,61 @@ class BaseAWQForCausalLM(nn.Module):
 
     @classmethod
     def from_quantized(
-        self,
-        model_path: Annotated[str, Doc("A Huggingface path or local path to a model.")],
-        model_type: Annotated[str, Doc("The model type, loaded from config.json.")],
-        model_filename: Annotated[
-            str, Doc("Load a specific model's filename by specifying this argument.")
-        ] = "",
-        max_seq_len: Annotated[
-            int,
-            Doc(
-                "The maximum sequence cached sequence length of the model. Larger values may increase loading time and memory usage."
-            ),
-        ] = None,
-        torch_dtype: Annotated[
-            torch.dtype,
-            Doc(
-                "The dtype to load the model as. May not work with other values than float16."
-            ),
-        ] = torch.float16,
-        trust_remote_code: Annotated[
-            bool,
-            Doc(
-                "Useful for Huggingface repositories that have not been integrated into transformers yet."
-            ),
-        ] = True,
-        safetensors: Annotated[
-            bool, Doc("Whether to download/load safetensors instead of torch weights.")
-        ] = True,
-        fuse_layers: Annotated[
-            bool,
-            Doc(
-                "Whether to use fused/optimized combination of layers for increased speed."
-            ),
-        ] = True,
-        use_exllama: Annotated[
-            bool, Doc("Whether to map the weights to ExLlamaV1 kernels.")
-        ] = False,
-        use_exllama_v2: Annotated[
-            bool, Doc("Whether to map the weights to ExLlamaV2 kernels.")
-        ] = False,
-        device_map: Annotated[
-            Union[str, Dict],
-            Doc(
-                "A device map that will be passed onto the model loading method from transformers."
-            ),
-        ] = "balanced",
-        offload_folder: Annotated[
-            str,
-            Doc("The folder ot offload the model to."),
-        ] = None,
-        **config_kwargs: Annotated[
-            Dict,
-            Doc(
-                "Additional kwargs that are passed to the config during initialization."
-            ),
-        ],
+            self,
+            model_path: Annotated[str, Doc("A Huggingface path or local path to a model.")],
+            model_type: Annotated[str, Doc("The model type, loaded from config.json.")],
+            model_filename: Annotated[
+                str, Doc("Load a specific model's filename by specifying this argument.")
+            ] = "",
+            max_seq_len: Annotated[
+                int,
+                Doc(
+                    "The maximum sequence cached sequence length of the model. Larger values may increase loading time and memory usage."
+                ),
+            ] = None,
+            torch_dtype: Annotated[
+                torch.dtype,
+                Doc(
+                    "The dtype to load the model as. May not work with other values than float16."
+                ),
+            ] = torch.float16,
+            trust_remote_code: Annotated[
+                bool,
+                Doc(
+                    "Useful for Huggingface repositories that have not been integrated into transformers yet."
+                ),
+            ] = True,
+            safetensors: Annotated[
+                bool, Doc("Whether to download/load safetensors instead of torch weights.")
+            ] = True,
+            fuse_layers: Annotated[
+                bool,
+                Doc(
+                    "Whether to use fused/optimized combination of layers for increased speed."
+                ),
+            ] = True,
+            use_exllama: Annotated[
+                bool, Doc("Whether to map the weights to ExLlamaV1 kernels.")
+            ] = False,
+            use_exllama_v2: Annotated[
+                bool, Doc("Whether to map the weights to ExLlamaV2 kernels.")
+            ] = False,
+            device_map: Annotated[
+                Union[str, Dict],
+                Doc(
+                    "A device map that will be passed onto the model loading method from transformers."
+                ),
+            ] = "balanced",
+            offload_folder: Annotated[
+                str,
+                Doc("The folder ot offload the model to."),
+            ] = None,
+            **config_kwargs: Annotated[
+                Dict,
+                Doc(
+                    "Additional kwargs that are passed to the config during initialization."
+                ),
+            ],
     ):
         """A method for initialization of a quantized model, usually in INT4."""
         # [STEP 1-2] Load weights path and configs
@@ -467,13 +471,13 @@ class BaseAWQForCausalLM(nn.Module):
         )
 
     def _load_config(
-        self,
-        model_path,
-        model_filename,
-        safetensors=True,
-        trust_remote_code=True,
-        max_seq_len=4096,
-        **config_kwargs,
+            self,
+            model_path,
+            model_filename,
+            safetensors=True,
+            trust_remote_code=True,
+            max_seq_len=4096,
+            **config_kwargs,
     ):
         # [STEP 1] Download model if path is not a directory
         if not os.path.isdir(model_path):
@@ -515,11 +519,11 @@ class BaseAWQForCausalLM(nn.Module):
         return model_weights_path, config, quant_config
 
     def _load_quantized_modules(
-        self, model, quant_config, version, use_exllama, use_exllama_v2
+            self, model, quant_config, version, use_exllama, use_exllama_v2
     ):
         # Real quantization of weights
         assert not (
-            version == "gemv" and (use_exllama or use_exllama_v2)
+                version == "gemv" and (use_exllama or use_exllama_v2)
         ), "Exllama kernels only support GEMM version."
 
         # Get blocks of model
@@ -581,23 +585,22 @@ class BaseAWQForCausalLM(nn.Module):
                 set_op_by_name(layer, scale_dict["scale_name"], scaled_act)
 
 
-
 # NOTE (xiaolong): we need to define BaseAWQForSeq2SeqLM in base.py
 class BaseAWQForSeq2SeqLM(nn.Module):
     def __init__(
-        self,
-        model: Annotated[PreTrainedModel, Doc("The pretrained or quantized model.")],
-        model_type: Annotated[str, Doc("The model type, found in config.json.")],
-        is_quantized: Annotated[
-            bool, Doc("Indicates if the current model is quantized.")
-        ],
-        config: Annotated[PretrainedConfig, Doc("The config of the model.")],
-        quant_config: Annotated[
-            AwqConfig, Doc("The quantization config of the model.")
-        ],
-        processor: Annotated[
-            AutoProcessor, Doc("An optional processor, e.g. for vision models.")
-        ],
+            self,
+            model: Annotated[PreTrainedModel, Doc("The pretrained or quantized model.")],
+            model_type: Annotated[str, Doc("The model type, found in config.json.")],
+            is_quantized: Annotated[
+                bool, Doc("Indicates if the current model is quantized.")
+            ],
+            config: Annotated[PretrainedConfig, Doc("The config of the model.")],
+            quant_config: Annotated[
+                AwqConfig, Doc("The quantization config of the model.")
+            ],
+            processor: Annotated[
+                AutoProcessor, Doc("An optional processor, e.g. for vision models.")
+            ],
     ):
         """The base model for all AutoAWQ models."""
         super().__init__()
@@ -624,30 +627,30 @@ class BaseAWQForSeq2SeqLM(nn.Module):
 
     @torch.no_grad()
     def quantize(
-        self,
-        tokenizer: Annotated[
-            PreTrainedTokenizer, Doc("The tokenizer to use for quantization.")
-        ] = None,
-        quant_config: Annotated[
-            Dict, Doc("The quantization config you want to use.")
-        ] = {},
-        calib_data: Annotated[
-            Union[str, List[str]],
-            Doc(
-                "The calibration dataset. Either a string pointing to Huggingface or a list of preloaded examples."
-            ),
-        ] = "pileval",
-        split: Annotated[str, Doc("The split of calib_data.")] = "train",
-        text_column: Annotated[str, Doc("The text column of calib_data.")] = "text",
-        duo_scaling: Annotated[
-            bool, Doc("Whether to scale using both w/x or just x.")
-        ] = True,
-        export_compatible: Annotated[
-            bool,
-            Doc(
-                "This argument avoids real quantization by only applying the scales without quantizing down to FP16."
-            ),
-        ] = False,
+            self,
+            tokenizer: Annotated[
+                PreTrainedTokenizer, Doc("The tokenizer to use for quantization.")
+            ] = None,
+            quant_config: Annotated[
+                Dict, Doc("The quantization config you want to use.")
+            ] = {},
+            calib_data: Annotated[
+                Union[str, List[str]],
+                Doc(
+                    "The calibration dataset. Either a string pointing to Huggingface or a list of preloaded examples."
+                ),
+            ] = "pileval",
+            split: Annotated[str, Doc("The split of calib_data.")] = "train",
+            text_column: Annotated[str, Doc("The text column of calib_data.")] = "text",
+            duo_scaling: Annotated[
+                bool, Doc("Whether to scale using both w/x or just x.")
+            ] = True,
+            export_compatible: Annotated[
+                bool,
+                Doc(
+                    "This argument avoids real quantization by only applying the scales without quantizing down to FP16."
+                ),
+            ] = False,
     ):
         """
         The main quantization function that you can use to quantize your model.
@@ -716,14 +719,14 @@ class BaseAWQForSeq2SeqLM(nn.Module):
         pass
 
     def save_quantized(
-        self,
-        save_dir: Annotated[str, Doc("The directory to save your model to.")],
-        safetensors: Annotated[
-            bool, Doc("Whether to save the model as safetensors or torch files.")
-        ] = True,
-        shard_size: Annotated[
-            str, Doc("The shard size for sharding large models into multiple chunks.")
-        ] = "5GB",
+            self,
+            save_dir: Annotated[str, Doc("The directory to save your model to.")],
+            safetensors: Annotated[
+                bool, Doc("Whether to save the model as safetensors or torch files.")
+            ] = True,
+            shard_size: Annotated[
+                str, Doc("The shard size for sharding large models into multiple chunks.")
+            ] = "5GB",
     ):
         save_dir = save_dir[:-1] if save_dir[-1] == "/" else save_dir
 
@@ -778,36 +781,36 @@ class BaseAWQForSeq2SeqLM(nn.Module):
 
     @classmethod
     def from_pretrained(
-        self,
-        model_path: Annotated[str, Doc("A Huggingface path or local path to a model.")],
-        model_type: Annotated[str, Doc("The model type, loaded from config.json.")],
-        torch_dtype: Annotated[
-            torch.dtype,
-            Doc(
-                "The dtype to load the model as. May not work with other values than float16."
-            ),
-        ] = torch.float16,
-        trust_remote_code: Annotated[
-            bool,
-            Doc(
-                "Useful for Huggingface repositories that have not been integrated into transformers yet."
-            ),
-        ] = True,
-        safetensors: Annotated[
-            bool, Doc("Whether to download/load safetensors instead of torch weights.")
-        ] = False,
-        device_map: Annotated[
-            Union[str, Dict],
-            Doc(
-                "A device map that will be passed onto the model loading method from transformers."
-            ),
-        ] = None,
-        **model_init_kwargs: Annotated[
-            Dict,
-            Doc(
-                "Additional kwargs that are passed to the model during initialization."
-            ),
-        ],
+            self,
+            model_path: Annotated[str, Doc("A Huggingface path or local path to a model.")],
+            model_type: Annotated[str, Doc("The model type, loaded from config.json.")],
+            torch_dtype: Annotated[
+                torch.dtype,
+                Doc(
+                    "The dtype to load the model as. May not work with other values than float16."
+                ),
+            ] = torch.float16,
+            trust_remote_code: Annotated[
+                bool,
+                Doc(
+                    "Useful for Huggingface repositories that have not been integrated into transformers yet."
+                ),
+            ] = True,
+            safetensors: Annotated[
+                bool, Doc("Whether to download/load safetensors instead of torch weights.")
+            ] = False,
+            device_map: Annotated[
+                Union[str, Dict],
+                Doc(
+                    "A device map that will be passed onto the model loading method from transformers."
+                ),
+            ] = None,
+            **model_init_kwargs: Annotated[
+                Dict,
+                Doc(
+                    "Additional kwargs that are passed to the model during initialization."
+                ),
+            ],
     ):
         safetensors = False
         """A method for initialization of pretrained models, usually in FP16."""
@@ -847,61 +850,61 @@ class BaseAWQForSeq2SeqLM(nn.Module):
 
     @classmethod
     def from_quantized(
-        self,
-        model_path: Annotated[str, Doc("A Huggingface path or local path to a model.")],
-        model_type: Annotated[str, Doc("The model type, loaded from config.json.")],
-        model_filename: Annotated[
-            str, Doc("Load a specific model's filename by specifying this argument.")
-        ] = "",
-        max_seq_len: Annotated[
-            int,
-            Doc(
-                "The maximum sequence cached sequence length of the model. Larger values may increase loading time and memory usage."
-            ),
-        ] = None,
-        torch_dtype: Annotated[
-            torch.dtype,
-            Doc(
-                "The dtype to load the model as. May not work with other values than float16."
-            ),
-        ] = torch.float16,
-        trust_remote_code: Annotated[
-            bool,
-            Doc(
-                "Useful for Huggingface repositories that have not been integrated into transformers yet."
-            ),
-        ] = True,
-        safetensors: Annotated[
-            bool, Doc("Whether to download/load safetensors instead of torch weights.")
-        ] = True,
-        fuse_layers: Annotated[
-            bool,
-            Doc(
-                "Whether to use fused/optimized combination of layers for increased speed."
-            ),
-        ] = True,
-        use_exllama: Annotated[
-            bool, Doc("Whether to map the weights to ExLlamaV1 kernels.")
-        ] = False,
-        use_exllama_v2: Annotated[
-            bool, Doc("Whether to map the weights to ExLlamaV2 kernels.")
-        ] = False,
-        device_map: Annotated[
-            Union[str, Dict],
-            Doc(
-                "A device map that will be passed onto the model loading method from transformers."
-            ),
-        ] = "balanced",
-        offload_folder: Annotated[
-            str,
-            Doc("The folder ot offload the model to."),
-        ] = None,
-        **config_kwargs: Annotated[
-            Dict,
-            Doc(
-                "Additional kwargs that are passed to the config during initialization."
-            ),
-        ],
+            self,
+            model_path: Annotated[str, Doc("A Huggingface path or local path to a model.")],
+            model_type: Annotated[str, Doc("The model type, loaded from config.json.")],
+            model_filename: Annotated[
+                str, Doc("Load a specific model's filename by specifying this argument.")
+            ] = "",
+            max_seq_len: Annotated[
+                int,
+                Doc(
+                    "The maximum sequence cached sequence length of the model. Larger values may increase loading time and memory usage."
+                ),
+            ] = None,
+            torch_dtype: Annotated[
+                torch.dtype,
+                Doc(
+                    "The dtype to load the model as. May not work with other values than float16."
+                ),
+            ] = torch.float16,
+            trust_remote_code: Annotated[
+                bool,
+                Doc(
+                    "Useful for Huggingface repositories that have not been integrated into transformers yet."
+                ),
+            ] = True,
+            safetensors: Annotated[
+                bool, Doc("Whether to download/load safetensors instead of torch weights.")
+            ] = True,
+            fuse_layers: Annotated[
+                bool,
+                Doc(
+                    "Whether to use fused/optimized combination of layers for increased speed."
+                ),
+            ] = True,
+            use_exllama: Annotated[
+                bool, Doc("Whether to map the weights to ExLlamaV1 kernels.")
+            ] = False,
+            use_exllama_v2: Annotated[
+                bool, Doc("Whether to map the weights to ExLlamaV2 kernels.")
+            ] = False,
+            device_map: Annotated[
+                Union[str, Dict],
+                Doc(
+                    "A device map that will be passed onto the model loading method from transformers."
+                ),
+            ] = "balanced",
+            offload_folder: Annotated[
+                str,
+                Doc("The folder ot offload the model to."),
+            ] = None,
+            **config_kwargs: Annotated[
+                Dict,
+                Doc(
+                    "Additional kwargs that are passed to the config during initialization."
+                ),
+            ],
     ):
         """A method for initialization of a quantized model, usually in INT4."""
         # [STEP 1-2] Load weights path and configs
@@ -977,13 +980,13 @@ class BaseAWQForSeq2SeqLM(nn.Module):
         )
 
     def _load_config(
-        self,
-        model_path,
-        model_filename,
-        safetensors=True,
-        trust_remote_code=True,
-        max_seq_len=4096,
-        **config_kwargs,
+            self,
+            model_path,
+            model_filename,
+            safetensors=True,
+            trust_remote_code=True,
+            max_seq_len=4096,
+            **config_kwargs,
     ):
         # [STEP 1] Download model if path is not a directory
         if not os.path.isdir(model_path):
@@ -993,7 +996,8 @@ class BaseAWQForSeq2SeqLM(nn.Module):
             else:
                 ignore_patterns.append("*.safetensors*")
 
-            model_path = snapshot_download(model_path, ignore_patterns=ignore_patterns, cache_dir=config_kwargs.get('cache_dir', None))
+            model_path = snapshot_download(model_path, ignore_patterns=ignore_patterns,
+                                           cache_dir=config_kwargs.get('cache_dir', None))
 
         if model_filename != "":
             model_weights_path = model_path + f"/{model_filename}"
@@ -1025,11 +1029,11 @@ class BaseAWQForSeq2SeqLM(nn.Module):
         return model_weights_path, config, quant_config
 
     def _load_quantized_modules(
-        self, model, quant_config, version, use_exllama, use_exllama_v2
+            self, model, quant_config, version, use_exllama, use_exllama_v2
     ):
         # Real quantization of weights
         assert not (
-            version == "gemv" and (use_exllama or use_exllama_v2)
+                version == "gemv" and (use_exllama or use_exllama_v2)
         ), "Exllama kernels only support GEMM version."
 
         # Get blocks of model
