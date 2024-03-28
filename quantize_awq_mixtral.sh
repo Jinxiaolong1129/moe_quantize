@@ -1,7 +1,6 @@
-export CUDA_VISIBLE_DEVICES=4
-
-
+device_id=4
 for bits in 8 4 2
 do
-    python quantize_awq_mixtral.py --bits $bits --group_size 64 &
+    CUDA_VISIBLE_DEVICES=$device_id python quantize_awq_mixtral.py --bits $bits --group_size 64 &
+    device_id=$((device_id+1))
 done
