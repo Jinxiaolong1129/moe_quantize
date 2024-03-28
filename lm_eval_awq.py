@@ -43,8 +43,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    args.quantized_model_file_base_name = f'{args.model_name.split("/")[-1]}-gptq_w_bit_{args.bits}'
-
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name, use_fast=False)
