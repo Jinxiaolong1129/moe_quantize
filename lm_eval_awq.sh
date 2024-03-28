@@ -1,5 +1,4 @@
 export DEBUG=0
-export PYTHONPATH=/home/LeiFeng/pingzhi/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/pingzhi/moe_quantize/auto_gptq/:$PYTHONPATH
 export CUDA_VISIBLE_DEVICES=0,1,2
 
 for bits in 8 4 2

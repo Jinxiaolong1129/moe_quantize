@@ -1,21 +1,14 @@
-import sys
-
-sys.path.append("/home/LeiFeng/pingzhi/moe_quantize/optimum/")  # Add the path to Python's search path
-# print(sys.path)
-
 import argparse
-import os
 import json
-
-from lm_eval import evaluator
-from lm_eval.models.huggingface import HFLM
-from lm_eval.tasks import initialize_tasks
+import os
 
 import torch
-
 from transformers import AutoTokenizer
 
 from awq import AutoAWQForCausalLM
+from lm_eval import evaluator
+from lm_eval.models.huggingface import HFLM
+from lm_eval.tasks import initialize_tasks
 
 LM_EVAL_TASK_KWARGS_DICT = {
     "winogrande": {"task": "winogrande", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
