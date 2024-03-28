@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     # TODO AWQ
     model = AutoAWQForCausalLM.from_pretrained(
-        model_path, **{"low_cpu_mem_usage": True, "use_cache": False, "device_map": "auto"}
+        model_path, **{"low_cpu_mem_usage": True, "use_cache": False}
     )
     tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
