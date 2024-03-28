@@ -1,13 +1,8 @@
-import os
+from argparse import ArgumentParser
 
-os.environ['HF_HOME'] = '/home/LeiFeng/pingzhi/moe_quantize/hf_cache'
-os.makedirs(os.environ['HF_HOME'], exist_ok=True)
-
-os.environ['CUDA_VISIBLE_DEVICES'] = '3,4,5,6,7'
+from transformers import AutoTokenizer
 
 from awq import AutoAWQForCausalLM
-from transformers import AutoTokenizer
-from argparse import ArgumentParser
 
 if __name__ == "__main__":
     parser = ArgumentParser()
