@@ -1746,6 +1746,7 @@ class BaseGPTQForCausalLM_mixed_precision(nn.Module, PushToHubMixin):
 
         torch.cuda.empty_cache()
 
+        inside_layer_modules = self.inside_layer_modules
         quantizers = {}
         for i in range(len(layers)):
             logger.info(f"Start quantizing layer {i + 1}/{len(layers)}")
