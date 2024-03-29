@@ -1,7 +1,7 @@
-from ._base import BaseGPTQForCausalLM
+from ._base import BaseGPTQForCausalLM_mixed_precision
 
 
-class MixtralGPTQForCausalLM(BaseGPTQForCausalLM):
+class MixtralGPTQForCausalLM(BaseGPTQForCausalLM_mixed_precision):
     layer_type = "MixtralDecoderLayer"
     layers_block_name = "model.layers"
     outside_layer_modules = ["model.embed_tokens", "model.norm"]
