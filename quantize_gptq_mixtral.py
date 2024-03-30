@@ -113,7 +113,10 @@ def main():
     model_state_dict = model.model.state_dict()
     for key, value in mixtral_bits.items():
         total_bits += value
-        total_num_params += model_state_dict[key].numel()
+        try:
+            total_num_params += model_state_dict[key].numel()
+        except KeyError as e:
+            print(key, list(model_state_dict.keys())[:10])
     average_bits = total_bits / total_num_params
     logging.info(f"Average bit-width of the model: {average_bits:.2f}")
 
