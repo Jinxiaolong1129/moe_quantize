@@ -80,21 +80,21 @@ def main():
 
     args = parser.parse_args()
 
+    bits_name = str(args.bits) if args.bits_name is None else args.bits_name
+
     logging.basicConfig(
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
         level=logging.INFO,
         datefmt="%Y-%m-%d %H:%M:%S",
-        filename=f"/home/LeiFeng/pingzhi/moe_quantize/quantize_gptq_mixtral_{args.bits}.log"
+        filename=f"/home/LeiFeng/pingzhi/moe_quantize/quantize_gptq_mixtral_{bits_name}.log"
     )
 
     args_dict = vars(args)
     logging.info("Command-line arguments: %s", args_dict)
 
     model_name = args.model_name
-    quant_path = f'autogptq_{model_name}-gptq_w_bit_{args.bits}' if args.bits_name is None else (
-        f'autogptq_{model_name}-gptq_w_bit_{args.bits_name}'
-    )
-    quantized_model_file_base_name = f'{model_name.split("/")[-1]}-gptq_w_bit_{args.bits_name}'
+    quant_path = f'autogptq_{model_name}-gptq_w_bit_{bits_name}'
+    quantized_model_file_base_name = f'{model_name.split("/")[-1]}-gptq_w_bit_{bits_name}'
 
     mixtral_bits = mixtral_quantize_config(args.bits)
 
