@@ -76,6 +76,7 @@ def main():
     parser.add_argument("--model_name", type=str, default=None)
     parser.add_argument("--nsamples", type=int, default=512)
     parser.add_argument("--group_size", type=int, default=128)
+    parser.add_argument("--bits_name", type=str, default=None)
 
     args = parser.parse_args()
 
@@ -90,7 +91,9 @@ def main():
     logging.info("Command-line arguments: %s", args_dict)
 
     model_name = args.model_name
-    quant_path = f'autogptq_{model_name}-gptq_w_bit_{args.bits}'
+    quant_path = f'autogptq_{model_name}-gptq_w_bit_{args.bits}' if args.bits_name is None else (
+        f'autogptq_{model_name}-gptq_w_bit_{args.bits_name}'
+    )
     quantized_model_file_base_name = f'{model_name.split("/")[-1]}-gptq_w_bit_{args.bits}'
 
     mixtral_bits = mixtral_quantize_config(args.bits)
