@@ -11,8 +11,6 @@ from lm_eval import evaluator
 from lm_eval.models.huggingface import HFLM
 from lm_eval.tasks import initialize_tasks
 
-import torch
-
 from transformers import AutoTokenizer
 
 from auto_gptq import AutoGPTQForCausalLM_mixed_precision
@@ -34,9 +32,6 @@ if __name__ == "__main__":
     parser.add_argument("--quant_model_path", type=str)
     parser.add_argument("--bits", type=str)
 
-    # parser.add_argument("--model_basename", type=str, default=None, help="Model file's basename.")
-    parser.add_argument("--n_ctx", type=int, default=512, help="Context size.")
-    parser.add_argument("--n_batch", type=int, default=512, help="Batch size.")
     parser.add_argument("--dataset_path", type=str, default="wikitext", help="Path to the dataset.")
     parser.add_argument("--dataset_name", type=str, default=None, help="Name of the dataset.")
     parser.add_argument("--split", type=str, default="test", help="Dataset split to use.")
@@ -46,19 +41,7 @@ if __name__ == "__main__":
         default="text",
         help="Column in the dataset containing the text.",
     )
-    parser.add_argument(
-        "--per_gpu_max_memory",
-        type=int,
-        default=None,
-        help="Max memory used in each GPU.",
-    )
-    parser.add_argument("--cpu_max_memory", type=int, default=None, help="Mx memory used in CPU.")
     parser.add_argument("--is_quantized", action="store_true", help="Is the model GPTQ quantized?")
-    parser.add_argument(
-        "--use_safetensors",
-        action="store_true",
-        help="Whether to use safetensors model file",
-    )
     parser.add_argument("--use_fast_tokenizer", action="store_true", help="Wheter to use fast tokenizer")
     parser.add_argument("--trust_remote_code", action="store_true", help="Whether to use remote code")
     parser.add_argument(
@@ -69,7 +52,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.is_quantized:
-        args.quantized_model_file_base_name = f'{args.model_name.split("/")[-1]}-gptq_w_bit_{args.bits}'
+        quantized_model_file_base_name = args.quant_model_path.split("/")[-1]
 
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -77,26 +60,11 @@ if __name__ == "__main__":
         if not tokenizer.pad_token_id:
             tokenizer.pad_token_id = tokenizer.eos_token_id
 
-        max_memory = {}
-        if args.per_gpu_max_memory is not None and args.per_gpu_max_memory > 0:
-            if torch.cuda.is_available():
-                max_memory.update({i: f"{args.per_gpu_max_memory}GIB" for i in range(torch.cuda.device_count())})
-        if args.cpu_max_memory is not None and args.cpu_max_memory > 0 and max_memory:
-            max_memory["cpu"] = f"{args.cpu_max_memory}GIB"
-        if not max_memory:
-            max_memory = None
-
-        if args.use_safetensors:
-            print(
-                "The argument --use_safetensors is deprecrated and will be removed in the next release. It is now the default behavior."
-            )
-
         model = AutoGPTQForCausalLM_mixed_precision.from_quantized(
             args.quant_model_path,
             low_cpu_mem_usage=True,
             device_map="auto",
-            max_memory=max_memory,
-            model_basename=args.quantized_model_file_base_name,
+            model_basename=quantized_model_file_base_name,
             use_safetensors=True,
             trust_remote_code=True,
             inject_fused_mlp=False,
