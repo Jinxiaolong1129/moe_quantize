@@ -99,7 +99,7 @@ def main():
     mixtral_bits = mixtral_quantize_config(args.bits)
 
     quantize_config = BaseQuantizeConfig_mixed_precision(
-        bits=mixtral_bits,  # quantize model to 4-bit
+        bits={k: v for k, v in mixtral_bits.items() if v != 16},  # quantize model to 4-bit
         group_size=args.group_size,  # it is recommended to set the value to 128
         desc_act=False,  # set to False can significantly speed up inference but the perplexity may slightly bad
         model_file_base_name=quantized_model_file_base_name
@@ -121,20 +121,11 @@ def main():
         total_bits += bits * num_params
         total_num_params += num_params
 
-    mixtral_bits = {k: v for k, v in mixtral_bits.items() if v != 16}
-
     average_bits = total_bits / total_num_params
     print(f"Average bit-width of the model: {average_bits:.2f}")
 
     quantization_dataset = get_wikitext2(tokenizer=tokenizer, seqlen=4096, nsamples=args.nsamples, split="train")
-    logging.info(f"Quantization dataset loaded with {args.nsamples} samples")
-    logging.info(f"Quantizing model to {args.bits}-bit")
-    logging.info(f"Quantization config: {mixtral_bits}")
-    logging.info(f"Quantized begin!!!!")
     model.quantize(quantization_dataset)
-    logging.info(f"Quantized finish!!!!")
-
-    logging.info(f"Quantized model begin to save")
     model.save_quantized(quant_path)
     logging.info(f"Quantized model saved to {quant_path}")
 
