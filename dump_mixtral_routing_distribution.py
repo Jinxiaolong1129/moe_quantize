@@ -64,6 +64,9 @@ def dump_mixtral_routing_top_trace(
         batch = {k: v.cuda() for k, v in batch.items()}
         if "labels" in batch:
             batch.pop("labels")
+        if batch_size == 1:
+            for k, v in batch.items():
+                batch[k] = v.squeeze(0)
         with torch.no_grad():
             outputs = model(**batch, output_router_logits=True)
         all_router_logits = outputs.router_logits
