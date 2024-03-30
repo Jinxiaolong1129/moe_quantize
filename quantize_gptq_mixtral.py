@@ -94,7 +94,7 @@ def main():
     quant_path = f'autogptq_{model_name}-gptq_w_bit_{args.bits}' if args.bits_name is None else (
         f'autogptq_{model_name}-gptq_w_bit_{args.bits_name}'
     )
-    quantized_model_file_base_name = f'{model_name.split("/")[-1]}-gptq_w_bit_{args.bits}'
+    quantized_model_file_base_name = f'{model_name.split("/")[-1]}-gptq_w_bit_{args.bits_name}'
 
     mixtral_bits = mixtral_quantize_config(args.bits)
 
