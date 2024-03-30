@@ -1,5 +1,5 @@
 export CUDA_VISIBLE_DEVICES=0,1,2
-
+export DEBUG=0
 
 #for bits in 2 4 8
 #do
@@ -8,5 +8,5 @@ export CUDA_VISIBLE_DEVICES=0,1,2
 
 for bits in 2 4 8
 do
-    python quantize_gptq_mixtral.py --model_name mistralai/Mixtral-8x7B-v0.1 --all_bits $bits
+    python quantize_gptq_mixtral.py --model_name mistralai/Mixtral-8x7B-v0.1 --bits main_$bits
 done

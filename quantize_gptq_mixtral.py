@@ -2,14 +2,13 @@ import sys
 
 sys.path.append("/home/LeiFeng/pingzhi/moe_quantize/optimum/")  # Add the path to Python's search path
 print(sys.path)
-
+import re
 import torch
 import random
 from argparse import ArgumentParser
 
 from transformers import AutoTokenizer
 from datasets import load_dataset
-from collections import OrderedDict
 from auto_gptq import (
     AutoGPTQForCausalLM_mixed_precision,
     BaseQuantizeConfig_mixed_precision
@@ -36,77 +35,44 @@ def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
     return dataset
 
 
-def mixtral_quantize_config(args):
-    if args.bits == 'all_4':
-        moe_block_bit_dict = {}
+def mixtral_quantize_config(bits_config_str: str):
+    mixtral_bit = dict()
 
-        for i in range(4):
-            key = f"self_attn.{['q_proj', 'k_proj', 'v_proj', 'o_proj'][i]}"
-            moe_block_bit_dict[key] = 4
+    # The main weight bits
+    main_bits = re.search(r"main_(\d)", bits_config_str)
+    if main_bits is None:
+        raise ValueError(f"Invalid bits config string: {bits_config_str}")
 
-        for i in range(8):
-            for part in ['w1', 'w2', 'w3']:
-                key = f"block_sparse_moe.experts.{i}.{part}"
-                moe_block_bit_dict[key] = 4
+    main_bits = int(main_bits.group(1))
+    moe_block_bit_dict = {}
 
-        mixtral_bit = dict()
+    for i in range(4):
+        key = f"self_attn.{['q_proj', 'k_proj', 'v_proj', 'o_proj'][i]}"
+        moe_block_bit_dict[key] = main_bits
 
-        for block_num in range(0, 32):
-            for layer in moe_block_bit_dict:
-                key = f'model.layers.{block_num}' + '.' + layer
-                mixtral_bit[key] = moe_block_bit_dict[layer]
+    for i in range(8):
+        for part in ['w1', 'w2', 'w3']:
+            key = f"block_sparse_moe.experts.{i}.{part}"
+            moe_block_bit_dict[key] = main_bits
 
-        return mixtral_bit
+    for block_num in range(0, 32):
+        for layer in moe_block_bit_dict:
+            key = f'model.layers.{block_num}' + '.' + layer
+            mixtral_bit[key] = moe_block_bit_dict[layer]
 
-    if args.bits == 'all_2':
-        moe_block_bit_dict = {}
+    # Special expert bits, e.g. "exp_l1e3_16": 16-bit for expert 3 in layer 1
+    special_expert_bits = re.findall(r"exp_l(\d)e(\d)_(\d+)", bits_config_str)
+    for layer, expert, bits in special_expert_bits:
+        for part in ['w1', 'w2', 'w3']:
+            key = f"model.layers.{int(layer)}.block_sparse_moe.experts.{int(expert)}.{part}"
+            mixtral_bit[key] = int(bits)
 
-        for i in range(4):
-            key = f"self_attn.{['q_proj', 'k_proj', 'v_proj', 'o_proj'][i]}"
-            moe_block_bit_dict[key] = 2
-
-        for i in range(8):
-            for part in ['w1', 'w2', 'w3']:
-                key = f"block_sparse_moe.experts.{i}.{part}"
-                moe_block_bit_dict[key] = 2
-
-        mixtral_bit = dict()
-
-        for block_num in range(0, 32):
-            for layer in moe_block_bit_dict:
-                key = f'model.layers.{block_num}' + '.' + layer
-                mixtral_bit[key] = moe_block_bit_dict[layer]
-
-        return mixtral_bit
-
-    if args.bits == 'all_8':
-        moe_block_bit_dict = {}
-
-        for i in range(4):
-            key = f"self_attn.{['q_proj', 'k_proj', 'v_proj', 'o_proj'][i]}"
-            moe_block_bit_dict[key] = 8
-
-        for i in range(8):
-            for part in ['w1', 'w2', 'w3']:
-                key = f"block_sparse_moe.experts.{i}.{part}"
-                moe_block_bit_dict[key] = 8
-
-        mixtral_bit = dict()
-
-        for block_num in range(0, 32):
-            for layer in moe_block_bit_dict:
-                key = f'model.layers.{block_num}' + '.' + layer
-                mixtral_bit[key] = moe_block_bit_dict[layer]
-
-        return mixtral_bit
-
-    raise ValueError("Invalid bits")
+    return mixtral_bit
 
 
 def main():
     parser = ArgumentParser()
     parser.add_argument("--bits", type=str)
-    parser.add_argument("--all_bits", type=int, default=None)
     parser.add_argument("--model_name", type=str, default=None)
     parser.add_argument("--nsamples", type=int, default=512)
     parser.add_argument("--group_size", type=int, default=128)
@@ -124,15 +90,10 @@ def main():
     logging.info("Command-line arguments: %s", args_dict)
 
     model_name = args.model_name
-    quant_path = f'autogptq_{model_name}-gptq_w_bit_{args.all_bits}' if args.all_bits is not None else (
-        f'autogptq_{model_name}-gptq_w_bit_{args.bits}'
-    )
+    quant_path = f'autogptq_{model_name}-gptq_w_bit_{args.bits}'
     quantized_model_file_base_name = f'{model_name.split("/")[-1]}-gptq_w_bit_{args.bits}'
 
-    if args.all_bits is not None:
-        mixtral_bits = args.all_bits
-    else:
-        mixtral_bits = mixtral_quantize_config(args)
+    mixtral_bits = mixtral_quantize_config(args.bits)
 
     quantize_config = BaseQuantizeConfig_mixed_precision(
         bits=mixtral_bits,  # quantize model to 4-bit
@@ -142,8 +103,19 @@ def main():
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    model = AutoGPTQForCausalLM_mixed_precision.from_pretrained(model_name, quantize_config, torch_dtype=torch.float16,
-                                                                trust_remote_code=True, device_map="auto")
+    model = AutoGPTQForCausalLM_mixed_precision.from_pretrained(
+        model_name, quantize_config, torch_dtype=torch.float16, trust_remote_code=True, device_map="auto"
+    )
+
+    # Calculate the average bit-width of the model
+    total_bits = 0
+    total_num_params = 0
+    model_state_dict = model.model.state_dict()
+    for key, value in mixtral_bits.items():
+        total_bits += value
+        total_num_params += model_state_dict[key].numel()
+    average_bits = total_bits / total_num_params
+    logging.info(f"Average bit-width of the model: {average_bits:.2f}")
 
     quantization_dataset = get_wikitext2(tokenizer=tokenizer, seqlen=4096, nsamples=args.nsamples, split="train")
     logging.info(f"Quantization dataset loaded with {args.nsamples} samples")
