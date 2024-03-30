@@ -11,10 +11,9 @@ import transformers
 from transformers import AutoConfig
 from transformers.utils.hub import cached_file
 
+from ._const import CPU, CUDA_0, EXLLAMA_DEFAULT_MAX_INPUT_LENGTH, SUPPORTED_MODELS
 from ..utils.import_utils import dynamically_import_QuantLinear
 from ..utils.modeling_utils import recurse_setattr
-from ._const import CPU, CUDA_0, EXLLAMA_DEFAULT_MAX_INPUT_LENGTH, SUPPORTED_MODELS
-
 
 logger = getLogger(__name__)
 
@@ -59,19 +58,19 @@ def get_module_by_name_suffix(model, module_name: str):
 
 
 def make_quant_mixed(
-    module,
-    names,
-    bits,
-    group_size,
-    name="",
-    use_triton: bool = False,
-    use_marlin: bool = False,
-    disable_exllama: Optional[bool] = None,
-    disable_exllamav2: bool = False,
-    use_qigen: bool = False,
-    use_cuda_fp16: bool = True,
-    desc_act: bool = False,
-    trainable: bool = False,
+        module,
+        names,
+        bits,
+        group_size,
+        name="",
+        use_triton: bool = False,
+        use_marlin: bool = False,
+        disable_exllama: Optional[bool] = None,
+        disable_exllamav2: bool = False,
+        use_qigen: bool = False,
+        use_cuda_fp16: bool = True,
+        desc_act: bool = False,
+        trainable: bool = False,
 ):
     # If disable_exllamav2 is True, we want to fall back on the exllama kernel and not the cuda/cuda_old ones.
     if disable_exllama is None:
@@ -84,7 +83,7 @@ def make_quant_mixed(
         use_triton=use_triton,
         desc_act=desc_act,
         group_size=group_size,
-        bits= 4, # TODO 修改bit
+        bits=4,  # TODO 修改bit
         disable_marlin=not use_marlin,
         disable_exllama=disable_exllama,
         disable_exllamav2=disable_exllamav2,
@@ -113,7 +112,7 @@ def make_quant_mixed(
                     use_triton=use_triton,
                     desc_act=desc_act,
                     group_size=group_size,
-                    bits=layer_bit, # TODO 修改bit
+                    bits=layer_bit,  # TODO 修改bit
                     disable_marlin=not use_marlin,
                     disable_exllama=disable_exllama,
                     disable_exllamav2=disable_exllamav2,
@@ -135,7 +134,7 @@ def make_quant_mixed(
                     use_triton=use_triton,
                     desc_act=desc_act,
                     group_size=group_size,
-                    bits=layer_bit, # TODO 修改bit
+                    bits=layer_bit,  # TODO 修改bit
                     disable_marlin=not use_marlin,
                     disable_exllama=disable_exllama,
                     disable_exllamav2=disable_exllamav2,
@@ -155,19 +154,19 @@ def make_quant_mixed(
 
 
 def make_quant(
-    module,
-    names,
-    bits,
-    group_size,
-    name="",
-    use_triton: bool = False,
-    use_marlin: bool = False,
-    disable_exllama: Optional[bool] = None,
-    disable_exllamav2: bool = False,
-    use_qigen: bool = False,
-    use_cuda_fp16: bool = True,
-    desc_act: bool = False,
-    trainable: bool = False,
+        module,
+        names,
+        bits,
+        group_size,
+        name="",
+        use_triton: bool = False,
+        use_marlin: bool = False,
+        disable_exllama: Optional[bool] = None,
+        disable_exllamav2: bool = False,
+        use_qigen: bool = False,
+        use_cuda_fp16: bool = True,
+        desc_act: bool = False,
+        trainable: bool = False,
 ):
     # If disable_exllamav2 is True, we want to fall back on the exllama kernel and not the cuda/cuda_old ones.
     if disable_exllama is None:
@@ -180,7 +179,7 @@ def make_quant(
         use_triton=use_triton,
         desc_act=desc_act,
         group_size=group_size,
-        bits= 4, # TODO 修改bit
+        bits=4,  # TODO 修改bit
         disable_marlin=not use_marlin,
         disable_exllama=disable_exllama,
         disable_exllamav2=disable_exllamav2,
@@ -208,7 +207,7 @@ def make_quant(
                     use_triton=use_triton,
                     desc_act=desc_act,
                     group_size=group_size,
-                    bits=bits, # TODO 修改bit
+                    bits=bits,  # TODO 修改bit
                     disable_marlin=not use_marlin,
                     disable_exllama=disable_exllama,
                     disable_exllamav2=disable_exllamav2,
@@ -229,7 +228,7 @@ def make_quant(
                     use_triton=use_triton,
                     desc_act=desc_act,
                     group_size=group_size,
-                    bits=bits, # TODO 修改bit
+                    bits=bits,  # TODO 修改bit
                     disable_marlin=not use_marlin,
                     disable_exllama=disable_exllama,
                     disable_exllamav2=disable_exllamav2,
@@ -249,12 +248,12 @@ def make_quant(
 
 
 def preprocess_checkpoint_qigen(
-    module,
-    names,
-    bits,
-    group_size,
-    checkpoint,
-    name="",
+        module,
+        names,
+        bits,
+        group_size,
+        checkpoint,
+        name="",
 ):
     try:
         import QIGen as qinfer
@@ -355,21 +354,21 @@ def preprocess_checkpoint_qigen(
 
 
 def pack_model(
-    model,
-    quantizers,
-    bits,
-    group_size,
-    use_triton=False,
-    use_cuda_fp16=True,
-    desc_act=False,
-    warmup_triton: bool = False,
-    force_layer_back_to_cpu: bool = False,
+        model,
+        quantizers,
+        bits,
+        group_size,
+        use_triton=False,
+        use_cuda_fp16=True,
+        desc_act=False,
+        warmup_triton: bool = False,
+        force_layer_back_to_cpu: bool = False,
 ):
     QuantLinear = dynamically_import_QuantLinear(
         use_triton=use_triton,
         desc_act=desc_act,
         group_size=group_size,
-        bits= 4, # TODO
+        bits=4,  # TODO
         disable_exllama=False,
         disable_exllamav2=True,
         disable_marlin=True,
@@ -379,9 +378,13 @@ def pack_model(
         model.to(CPU)
 
     logger.info("Packing model...")
-    layers = find_layers(model) 
-    layers = {n: layers[n] for n in quantizers} # FIXME: mix_precision / full precision different
-    make_quant(
+    layers = find_layers(model)
+    layers = {n: layers[n] for n in quantizers}  # FIXME: mix_precision / full precision different
+    if isinstance(bits, int):
+        make_quant_fn = make_quant
+    else:
+        make_quant_fn = make_quant_mixed
+    make_quant_fn(
         model,
         quantizers,
         bits,
@@ -597,9 +600,12 @@ def autogptq_post_init(model, use_act_order: bool, max_input_length: Optional[in
 
 
 def make_sure_no_tensor_in_meta_device(
-    model, use_triton: bool, desc_act: bool, group_size: int, bits: int, disable_exllama: bool, disable_exllamav2: bool, use_marlin: bool = False,
+        model, use_triton: bool, desc_act: bool, group_size: int, bits: int, disable_exllama: bool,
+        disable_exllamav2: bool, use_marlin: bool = False,
 ):
-    QuantLinear = dynamically_import_QuantLinear(use_triton, desc_act, group_size, bits=bits, disable_exllama=disable_exllama, disable_exllamav2=disable_exllamav2, disable_marlin=not use_marlin)
+    QuantLinear = dynamically_import_QuantLinear(use_triton, desc_act, group_size, bits=bits,
+                                                 disable_exllama=disable_exllama, disable_exllamav2=disable_exllamav2,
+                                                 disable_marlin=not use_marlin)
     for n, m in model.named_modules():
         if isinstance(m, QuantLinear) and m.bias.device == torch.device("meta"):
             m.register_buffer("bias", torch.zeros((m.outfeatures), dtype=torch.float16, device="cpu"))
@@ -631,11 +637,11 @@ def awq_reverse_reorder_int_tensor(int_tensor, bits: int):
 
 
 def unpack_awq(
-    awq_qweight: torch.Tensor,
-    awq_qzeros: torch.Tensor,
-    awq_scales: torch.Tensor,
-    bits: int,
-    group_size: int,
+        awq_qweight: torch.Tensor,
+        awq_qzeros: torch.Tensor,
+        awq_scales: torch.Tensor,
+        bits: int,
+        group_size: int,
 ):
     """
     Args:
@@ -670,14 +676,14 @@ def unpack_awq(
 
     # zeros = zeros + 1
 
-    torch.bitwise_and(zeros, (2**bits) - 1, out=zeros)
+    torch.bitwise_and(zeros, (2 ** bits) - 1, out=zeros)
 
     zeros = zeros.reshape(-1, 1, zeros.shape[1] * zeros.shape[2])
 
     weight = torch.bitwise_right_shift(torch.unsqueeze(qweight, 1), wf.unsqueeze(-1)).to(
         torch.int16 if bits == 8 else torch.int8
     )
-    torch.bitwise_and(weight, (2**bits) - 1, out=weight)
+    torch.bitwise_and(weight, (2 ** bits) - 1, out=weight)
     weight = weight.reshape(-1, group_size, weight.shape[2])
 
     weight = weight.view(-1, weight.shape[-1])
@@ -704,11 +710,11 @@ def unpack_awq(
 
 
 def pack_from_tensors(
-    unpacked_qweight: torch.Tensor,
-    unpacked_qzeros: torch.Tensor,
-    awq_scales: torch.Tensor,
-    bits: int,
-    group_size: int,
+        unpacked_qweight: torch.Tensor,
+        unpacked_qzeros: torch.Tensor,
+        awq_scales: torch.Tensor,
+        bits: int,
+        group_size: int,
 ):
     """
     Args:
@@ -766,7 +772,7 @@ def pack_from_tensors(
     qweight = torch.from_numpy(qweight)
 
     unpacked_qzeros = unpacked_qzeros - 1
-    torch.bitwise_and(unpacked_qzeros, (2**bits) - 1, out=unpacked_qzeros)
+    torch.bitwise_and(unpacked_qzeros, (2 ** bits) - 1, out=unpacked_qzeros)
 
     unpacked_qzeros = unpacked_qzeros.numpy().astype(np.uint32)
     qzeros = np.zeros(
@@ -786,7 +792,9 @@ def pack_from_tensors(
 
     return qweight, qzeros
 
-def get_checkpoints(model_name_or_path: str, extensions: List[str], possible_model_basenames: List[str], **cached_file_kwargs):
+
+def get_checkpoints(model_name_or_path: str, extensions: List[str], possible_model_basenames: List[str],
+                    **cached_file_kwargs):
     """
     Retrives (and if necessary downloads from Hugging Face Hub) the model checkpoint. Sharding is supported. All the `possible_model_basenames` (e.g. `["model", "model-4bit-gptq"]`) will be explored over all `extensions` (e.g. `[".bin", ".safetensors"]`).
     """
@@ -816,9 +824,9 @@ def get_checkpoints(model_name_or_path: str, extensions: List[str], possible_mod
             for possible_model_basename in possible_model_basenames:
                 shard_index_name = possible_model_basename + ext + ".index.json"
                 shard_index = cached_file(
-                        model_name_or_path,
-                        shard_index_name,
-                        **cached_file_kwargs,
+                    model_name_or_path,
+                    shard_index_name,
+                    **cached_file_kwargs,
                 )
                 searched_files.append(shard_index_name)
                 if shard_index is not None:
@@ -853,6 +861,7 @@ def get_checkpoints(model_name_or_path: str, extensions: List[str], possible_mod
         )
 
     return False, resolved_archive_file, true_model_basename
+
 
 __all__ = [
     "get_device",
