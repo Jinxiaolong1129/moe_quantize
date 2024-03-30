@@ -121,6 +121,8 @@ def main():
         total_bits += bits * num_params
         total_num_params += num_params
 
+    mixtral_bits = {k: v for k, v in mixtral_bits.items() if v != 16}
+
     average_bits = total_bits / total_num_params
     print(f"Average bit-width of the model: {average_bits:.2f}")
 
