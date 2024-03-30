@@ -10,8 +10,7 @@ export CUDA_VISIBLE_DEVICES=2,3,4
 #    --bits $bits \
 #    --is_quantized
 #done
-CUDA_VISIBLE_DEVICES=2,3,4 python lm_eval_gptq.py \
+CUDA_VISIBLE_DEVICES=5,6,7 python lm_eval_gptq.py \
     --model_name mistralai/Mixtral-8x7B-v0.1 \
-    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_4.most_used \
-    --bits 4 \
+    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_2.most_used \
     --is_quantized
