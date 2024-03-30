@@ -40,7 +40,7 @@ if __name__ == "__main__":
         default="text",
         help="Column in the dataset containing the text.",
     )
-    parser.add_argument("--is_quantized", bitsaction="store_true", help="Is the model GPTQ quantized?")
+    parser.add_argument("--is_quantized", action="store_true", help="Is the model GPTQ quantized?")
     parser.add_argument("--use_fast_tokenizer", action="store_true", help="Wheter to use fast tokenizer")
     parser.add_argument("--trust_remote_code", action="store_true", help="Whether to use remote code")
     parser.add_argument(
