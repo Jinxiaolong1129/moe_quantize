@@ -2,11 +2,16 @@ export DEBUG=0
 export PYTHONPATH=/home/LeiFeng/pingzhi/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/pingzhi/moe_quantize/auto_gptq/:$PYTHONPATH
 export CUDA_VISIBLE_DEVICES=2,3,4
 
-for bits in 4 2
-do
-python lm_eval_gptq.py \
+#for bits in 4 2
+#do
+#python lm_eval_gptq.py \
+#    --model_name mistralai/Mixtral-8x7B-v0.1 \
+#    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_$bits.most_used \
+#    --bits $bits \
+#    --is_quantized
+#done
+CUDA_VISIBLE_DEVICES=2,3,4 python lm_eval_gptq.py \
     --model_name mistralai/Mixtral-8x7B-v0.1 \
-    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_$bits.most_used \
-    --bits $bits \
+    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_4.most_used \
+    --bits 4 \
     --is_quantized
-done
