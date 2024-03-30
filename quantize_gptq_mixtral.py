@@ -110,14 +110,14 @@ def main():
     # Calculate the average bit-width of the model
     total_bits = 0
     total_num_params = 0
-    model_state_dict = model.model.state_dict()
-    for key, value in mixtral_bits.items():
-        total_bits += value
-        try:
-            total_num_params += model_state_dict[key].numel()
-        except KeyError as e:
-            print(key, list(model_state_dict.keys())[:10])
-            raise e
+    for name, module in model.model.named_modules():
+        if name not in mixtral_bits:
+            continue
+        bits = mixtral_bits[name]
+        num_params = sum(p.numel() for p in module.parameters())
+        total_bits += bits * num_params
+        total_num_params += num_params
+
     average_bits = total_bits / total_num_params
     logging.info(f"Average bit-width of the model: {average_bits:.2f}")
 
