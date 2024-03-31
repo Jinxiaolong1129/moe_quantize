@@ -10,11 +10,21 @@ device_idx=0
 #    device_idx=$((device_idx+1))
 #done
 
+#for bits in 2 4
+#do
+#    DEBUG=0 CUDA_VISIBLE_DEVICES=$device_idx python quantize_gptq_mixtral.py \
+#      --model_name mistralai/Mixtral-8x7B-v0.1 \
+#      --bits main_$bits.exp_l1e3_8 &
+#
+#    device_idx=$((device_idx+1))
+#done
+
 for bits in 2 4
 do
     DEBUG=0 CUDA_VISIBLE_DEVICES=$device_idx python quantize_gptq_mixtral.py \
       --model_name mistralai/Mixtral-8x7B-v0.1 \
-      --bits main_$bits.exp_l1e3_8 &
+      --bits main_$bits.exp_l0e0_8.exp_l1e3_8.exp_l2e0_8.exp_l3e4_8.exp_l4e5_8.exp_l5e6_8.exp_l6e4_8.exp_l7e0_8.exp_l8e1_8.exp_l9e7_8.exp_l10e4_8.exp_l11e5_8.exp_l12e2_8.exp_l13e0_8.exp_l14e2_8.exp_l15e3_8.exp_l16e0_8.exp_l17e6_8.exp_l18e0_8.exp_l19e6_8.exp_l20e3_8.exp_l21e6_8.exp_l22e3_8.exp_l23e3_8.exp_l24e2_8.exp_l25e2_8.exp_l26e0_8.exp_l27e4_8.exp_l28e2_8.exp_l29e3_8.exp_l30e0_8.exp_l31e0_8 \
+      --bits_name main_$bits.most_mass &
 
     device_idx=$((device_idx+1))
 done

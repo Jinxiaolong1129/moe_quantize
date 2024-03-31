@@ -72,7 +72,7 @@ if __name__ == "__main__":
         )
 
     save_file_path = os.path.join(f"{args.quant_model_path.split('/')[0]}",
-                                  f"eval_result_{args.quant_model_path.split('/')[-1]}")
+                                  f"eval_result_{args.quant_model_path.split('/')[-1]}.json")
     all_metrics = {}
     if os.path.exists(save_file_path):
         with open(save_file_path, 'r') as file:
