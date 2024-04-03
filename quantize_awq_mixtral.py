@@ -1,6 +1,6 @@
 import os
-os.environ['HF_HOME'] = '/home/LeiFeng/xiaolong/moe_quantize/hf_cache'
-os.makedirs(os.environ['HF_HOME'], exist_ok=True)
+# os.environ['HF_HOME'] = '/home/LeiFeng/xiaolong/moe_quantize/hf_cache'
+# os.makedirs(os.environ['HF_HOME'], exist_ok=True)
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '3,4,5,6,7'
 
@@ -14,6 +14,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--bits", type=int, default=4)
     parser.add_argument("--group_size", type=int, default=64)
+    parser.add_argument("--is_quantized", type=bool, default=True)
 
     args = parser.parse_args()
 
@@ -53,9 +54,11 @@ if __name__ == "__main__":
 
 
 # nohup python quantize_mixtral.py --bits 4 --group_size 64 > awq_quantize_mixtral_all_4bit_group64.log 2>&1 &
+
 # nohup python quantize_mixtral.py --bits 2 --group_size 64 > awq_quantize_mixtral_all_2bit_group64.log 2>&1 &
 
 # nohup python quantize_mixtral.py --bits 8 --group_size 64 > awq_quantize_mixtral_all_8bit_group64.log 2>&1 & 768953
 
 # nohup python quantize_mixtral.py --bits 4 --group_size 128 > awq_quantize_mixtral_all_4bit_group128.log 2>&1 & 769848
+
 # nohup python quantize_mixtral.py --bits 2 --group_size 128 > awq_quantize_mixtral_all_2bit_group128.log 2>&1 & 770554

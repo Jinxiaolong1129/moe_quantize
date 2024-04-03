@@ -25,6 +25,9 @@ from awq.utils.module import (
 from transformers.models.switch_transformers.modeling_switch_transformers import SwitchTransformersSparseMLP
 
 
+import logging
+logger = logging.getLogger(__name__)
+
 class AwqQuantizer:
     def __init__(
         self,
@@ -45,7 +48,7 @@ class AwqQuantizer:
         self.awq_model = awq_model
         self.model = model
         self.tokenizer = tokenizer
-        self.w_bit = w_bit # TODO 判断bit mixed precision需要为list 按照不同的expert module进行选择
+        self.w_bit = w_bit  # TODO 判断bit mixed precision需要为list 按照不同的expert module进行选择
         self.group_size = group_size
         self.zero_point = zero_point
         self.version = version
@@ -59,7 +62,7 @@ class AwqQuantizer:
         )
         self.modules, self.module_kwargs, self.inps = self.init_quant()
 
-        print(f"Quantizing with w_bit={w_bit}")
+        logger.info(f"Quantizing with w_bit={w_bit}")
 
     def pseudo_quantize_tensor(self, w: torch.Tensor):
         org_w_shape = w.shape
@@ -159,10 +162,12 @@ class AwqQuantizer:
             module_config: List[Dict] = self.awq_model.get_layers_for_scaling(
                 self.modules[i], input_feat, self.module_kwargs
             )
-            scales_list = [
-                self._search_best_scale(self.modules[i], **layer)
-                for layer in module_config
-            ]
+            scales_list = []
+            for index, layer in enumerate(module_config):
+                if index == 3 :
+                    pass
+                scales_list.append(self._search_best_scale(self.modules[i], **layer)) 
+            
             apply_scale(self.modules[i], scales_list, input_feat_dict=input_feat)
             scales_list = append_str_prefix(
                 scales_list, get_op_name(self.model, self.modules[i]) + "."
@@ -195,6 +200,7 @@ class AwqQuantizer:
 
     def _apply_quant(self, module, named_linears: Dict[str, nn.Linear]):
         for name, linear_layer in named_linears.items():
+            logger.info(f'quantize finished | {name}')
             linear_layer = linear_layer.to(get_best_device()).half()
 
             linear_layer.weight.data, scales, zeros = self.pseudo_quantize_tensor(
@@ -358,7 +364,7 @@ class AwqQuantizer:
             module2inspect.load_state_dict(org_sd)
 
         if best_ratio == -1:
-            logging.debug(history)
+            logger.debug(history)
             raise Exception
 
         assert torch.isnan(best_scales).sum() == 0, best_scales
@@ -443,7 +449,7 @@ class AwqQuantizer:
 
     def init_quant(self, n_samples=128, seqlen=512): # n_samples=128, seqlen=512
 
-        # TODO (xiaolong): get modules here
+        # NOTE (xiaolong): get modules here
         modules = self.awq_model.get_model_layers(self.model)
         # (xiaolong) get calibration dataset
         samples = get_calib_dataset(
@@ -456,8 +462,8 @@ class AwqQuantizer:
         )
         # TODO (xiaolong): now, just support decoder part
         samples = torch.cat(samples, dim=0) # [65 512]
-        print(f'sample.shape {samples.shape}')
-        logging.info(f"Calibration dataset shape: {samples.shape}")
+        logger.info(f'sample.shape {samples.shape}')
+        logger.info(f"Calibration dataset shape: {samples.shape}")
         
         inps = []
         layer_kwargs = {}
@@ -526,15 +532,20 @@ class AwqQuantizer:
         handles = []
 
         # FIXME: Workaround for Mixtral to use block_sparse_moe input features
-        if self.awq_model.model_type == "mixtral":
+        if self.awq_model.model_type == "mixtral": # NOTE why mixtral
             named_linears = {
                 **named_linears,
                 "block_sparse_moe": layer.block_sparse_moe,
             }
+        elif self.awq_model.model_type == "deepseek":
+            named_linears = {
+                **named_linears,
+                "block_sparse_moe": layer.mlp,
+            }
         # NOTE add support for deepseek
 
         # use hook to get input features
-        # TODO (xiaolong) get output as next layer's input
+        # NOTE (xiaolong) get output as next layer's input
         for name in named_linears:
             handles.append(
                 named_linears[name].register_forward_hook(
@@ -611,7 +622,7 @@ class AwqQuantizerForSeq2SeqLM:
         )
         self.encoder_modules, self.decoder_modules, self.module_kwargs, self.inps, self.decoder_layer_kwargs, self.decoder_inps, self.encoder_hidden_states = self.init_quant()
 
-        print(f"Quantizing with w_bit={w_bit}")
+        logger.info(f"Quantizing with w_bit={w_bit}")
 
     def pseudo_quantize_tensor(self, w: torch.Tensor):
         org_w_shape = w.shape
@@ -673,9 +684,9 @@ class AwqQuantizerForSeq2SeqLM:
 
         # for i in tqdm(range(len(self.encoder_modules)), desc="AWQ"):
         #     # if i == 1:
-        #     #     print('moe layer')
+        #     #     logger.info('moe layer')
         #     # if i == 12:
-        #     #     print('decoder layer')
+        #     #     logger.info('decoder layer')
         #     # Move module and inputs to correct device
         #     common_device = next(self.encoder_modules[i].parameters()).device
         #     if common_device is None or str(common_device) == "cpu":
@@ -950,7 +961,7 @@ class AwqQuantizerForSeq2SeqLM:
         w_mean = w_mean.view(-1).to(device)
 
         if isinstance(module2inspect, SwitchTransformersSparseMLP):
-            print("Sparse MLP")
+            logger.info("Sparse MLP")
         for ratio in range(n_grid):
             # create new scales
             ratio = ratio / n_grid
@@ -1002,7 +1013,7 @@ class AwqQuantizerForSeq2SeqLM:
             module2inspect.load_state_dict(org_sd)
 
         if best_ratio == -1:
-            logging.debug(history)
+            logger.debug(history)
             raise Exception
 
         assert torch.isnan(best_scales).sum() == 0, best_scales

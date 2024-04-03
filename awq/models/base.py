@@ -46,6 +46,9 @@ from awq.modules.act import ScaledActivation
 from awq.quantize.quantizer import AwqQuantizer, AwqQuantizerForSeq2SeqLM
 from awq.utils.module import get_named_linears, set_op_by_name
 
+import logging
+logger = logging.getLogger(__name__)
+
 # Since we support different `AutoModelForxxx` from transformers
 # we need to define a custom mapping dict as below:
 TRANSFORMERS_AUTO_MAPPING_DICT = {
@@ -323,7 +326,7 @@ class BaseAWQForCausalLM(nn.Module):
             device_map=device_map,
             **model_init_kwargs,
         )
-
+        # FIXME hfdevice 存在问题
         model.eval()
 
         return self(

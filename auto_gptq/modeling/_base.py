@@ -59,11 +59,12 @@ from ._utils import (
     move_to_device,
     pack_from_tensors,
     pack_model,
+    pack_model_mixed,
     preprocess_checkpoint_qigen,
     simple_dispatch_model,
     unpack_awq,
 )
-
+import time
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -414,6 +415,7 @@ class BaseGPTQForCausalLM(nn.Module, PushToHubMixin):
         autotune_warmup_after_quantized: bool = False,
         cache_examples_on_gpu: bool = True,
     ):
+        start_time = time.time()
         if self.quantized:
             raise EnvironmentError("can't execute quantize because the model is quantized.")
         if use_triton and not TRITON_AVAILABLE:
@@ -611,7 +613,13 @@ class BaseGPTQForCausalLM(nn.Module, PushToHubMixin):
             del layer_inputs
             layer_inputs, layer_outputs = layer_outputs, []
             torch.cuda.empty_cache()
+            logger.info(f"Finish quantizing layer {i + 1}/{len(layers)}")
 
+        elapsed_time = time.time() - start_time
+        logger.info(f"=========Quantized time: {elapsed_time}=========")
+            
+            
+        start_time = time.time() 
         pack_model(
             model=self.model,
             quantizers=quantizers,
@@ -623,6 +631,9 @@ class BaseGPTQForCausalLM(nn.Module, PushToHubMixin):
             warmup_triton=autotune_warmup_after_quantized,
             force_layer_back_to_cpu=force_layer_back_to_cpu,
         )
+        elapsed_time = time.time() - start_time
+        logger.info(f"=========Pack model time: {elapsed_time}=========")
+            
         if device_map:
             self.model = remove_hook_from_module(self.model, recurse=True)
             self.model = simple_dispatch_model(self.model, device_map)
@@ -1637,6 +1648,8 @@ class BaseGPTQForCausalLM_mixed_precision(nn.Module, PushToHubMixin):
         autotune_warmup_after_quantized: bool = False,
         cache_examples_on_gpu: bool = True,
     ):
+        start_time = time.time()
+        
         if self.quantized:
             raise EnvironmentError("can't execute quantize because the model is quantized.")
         if use_triton and not TRITON_AVAILABLE:
@@ -1841,13 +1854,18 @@ class BaseGPTQForCausalLM_mixed_precision(nn.Module, PushToHubMixin):
             layer_inputs, layer_outputs = layer_outputs, []
             torch.cuda.empty_cache()
             
-            if os.environ["DEBUG"] == "1":
-                # if i == 1:
-                #     break
-                pass
+            # DEBUG 
+            # if i == 0:
+            #     break
                 
-                
-        pack_model(
+        
+        elapsed_time = time.time() - start_time
+        logger.info(f"=========Quantized time: {elapsed_time}")
+            
+            
+        start_time = time.time() 
+        # TODO         
+        pack_model_mixed(
             model=self.model,
             quantizers=quantizers,
             bits=self.quantize_config.bits,
@@ -1858,6 +1876,10 @@ class BaseGPTQForCausalLM_mixed_precision(nn.Module, PushToHubMixin):
             warmup_triton=autotune_warmup_after_quantized,
             force_layer_back_to_cpu=force_layer_back_to_cpu,
         )
+        
+        elapsed_time = time.time() - start_time
+        logger.info(f"=========Pack model time: {elapsed_time}")
+            
         logger.info("Quantization pack_model finished.")
         if device_map:
             self.model = remove_hook_from_module(self.model, recurse=True)

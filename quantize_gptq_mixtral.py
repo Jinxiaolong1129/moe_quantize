@@ -14,7 +14,6 @@ import logging
 from datasets import load_dataset
 
 from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig, AutoGPTQForCausalLM_mixed_precision, BaseQuantizeConfig_mixed_precision
-import logging
 
 
 def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
@@ -35,6 +34,7 @@ def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
         dataset.append({"input_ids": inp, "attention_mask": attention_mask})
     return dataset
 
+
 def get_Pile_dataset(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
     data = load_dataset("json", data_files='data/minipile/val.jsonl.zst', split="train")
 
@@ -50,8 +50,6 @@ def get_Pile_dataset(tokenizer, seqlen: int, nsamples: int, split: str = "train"
         attention_mask = torch.ones_like(inp)
         dataset.append({"input_ids": inp, "attention_mask": attention_mask})
     return dataset
-
-
 
 
 def main():
@@ -82,7 +80,7 @@ def main():
     model_name = args.model_name    
     quant_path = f'autogptq_{model_name}-gptq_w_bit_{args.bits}'
     
-    quantize_config = BaseQuantizeConfig_mixed_precision(
+    quantize_config = BaseQuantizeConfig(
         bits=args.bits,  # quantize model to 4-bit
         group_size=args.group_size,  # default 128
         desc_act=False,  # set to False can significantly speed up inference but the perplexity may slightly bad

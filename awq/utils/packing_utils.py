@@ -39,16 +39,16 @@ def reverse_awq_order(iweights: torch.Tensor, izeros: torch.Tensor, bits: int):
 
         return iweights, izeros
     elif bits == 2:
+        return iweights, izeros
+    elif bits == 8:
+        return iweights, izeros
+
+
         # For 2-bit, if no reordering is needed, keep the order sequential
         # order_map = list(range(32 // bits))  # This will be [0, 1, 2, ..., 15]
 
         # izeros = izeros[:, order_map]
         # iweights = iweights[:, order_map]
-
-        return iweights, izeros
-    elif bits == 8:
-        return iweights, izeros
-
 
 def pack_exllama(iweights: torch.Tensor, izeros: torch.Tensor, bits: int):
     shifts = torch.arange(0, 32, bits, device=iweights.device)

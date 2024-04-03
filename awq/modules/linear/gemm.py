@@ -275,7 +275,7 @@ class WQLinear_GEMM(nn.Module):
 
 
 
-class WQLinear_GEMM_back(nn.Module):
+class WQLinear_GEMM_backup_code(nn.Module):
     def __init__(
         self, w_bit, group_size, in_features, out_features, bias, dev, training=False
     ):

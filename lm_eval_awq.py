@@ -1,12 +1,9 @@
-import sys
-sys.path.append("/home/LeiFeng/xiaolong/moe_quantize/optimum/")  # Add the path to Python's search path
-# print(sys.path)
-
 import argparse
 import os
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import json
+import numpy as np
 
 from lm_eval import evaluator
 from lm_eval.models.huggingface import HFLM
@@ -22,109 +19,92 @@ from transformers import AutoTokenizer, TextGenerationPipeline
 import logging
 from datasets import load_dataset
 
-from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig, AutoGPTQForCausalLM_mixed_precision, BaseQuantizeConfig_mixed_precision
+from awq import AutoAWQForCausalLM
 
+DEEPSEEK_MODEL_COMPONENTS = [
+    'model.embed_tokens', 'model.layers.0', 'model.layers.1', 'model.layers.2', 'model.layers.3', 'model.layers.4', 'model.layers.5', 'model.layers.6', 'model.layers.7', 'model.layers.8',
+    'model.layers.9', 'model.layers.10', 'model.layers.11', 'model.layers.12', 'model.layers.13', 'model.layers.14', 'model.layers.15', 'model.layers.16', 'model.layers.17', 'model.layers.18',
+    'model.layers.19', 'model.layers.20', 'model.layers.21', 'model.layers.22', 'model.layers.23', 'model.layers.24', 'model.layers.25', 'model.layers.26', 'model.layers.27', 'model.norm', 'lm_head'
+]
 
 
 LM_EVAL_TASK_KWARGS_DICT = {
-    "winogrande": {"task": "winogrande", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    "copa": {"task": "copa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    "openbookqa": {"task": "openbookqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
-    "hellaswag": {"task": "hellaswag", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
-    "lambada_openai": {"task": "lambada_openai", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    "rte": {"task": "rte", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    "piqa": {"task": "piqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
+    # "winogrande": {"task": "winogrande", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
+    # "copa": {"task": "copa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
+    # "openbookqa": {"task": "openbookqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},    
+    # "hellaswag": {"task": "hellaswag", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
+    # "lambada_openai": {"task": "lambada_openai", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
+    # "rte": {"task": "rte", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
+    # "piqa": {"task": "piqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
     
-    # "mmlu": {"task": "mmlu", "num_fewshot": 5, "batch_size": 128, "metric": "acc"},
+    "mmlu": {"task": "mmlu", "num_fewshot": 5, "batch_size": 8, "metric": "acc"},
 }
+
+
+
+
+def create_device_map(components):
+    num_gpus = torch.cuda.device_count()
+    device_map = {}
+    if num_gpus == 0:
+        print("No GPU found. Please check your system.")
+        return device_map
+
+    part_size = len(components) // num_gpus
+    for i, component in enumerate(components):
+        device_id = i // part_size
+        device_id = min(device_id, num_gpus - 1)
+        device_map[component] = device_id
+    print(f"Device map: {device_map}")
+    return device_map
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Calculate Perplexity for a model.")
-    parser.add_argument("--model_name", type=str, default='deepseek-ai/deepseek-moe-16b-chat')
-    parser.add_argument("--quant_model_path", type=str)
+    parser.add_argument("--model_path", type=str, default='')
     parser.add_argument("--bits", type=str)
-    
-    # parser.add_argument("--model_basename", type=str, default=None, help="Model file's basename.")
-    parser.add_argument("--n_ctx", type=int, default=512, help="Context size.")
-    parser.add_argument("--n_batch", type=int, default=512, help="Batch size.")
-    parser.add_argument("--dataset_path", type=str, default="wikitext", help="Path to the dataset.")
-    parser.add_argument("--dataset_name", type=str, default=None, help="Name of the dataset.")
-    parser.add_argument("--split", type=str, default="test", help="Dataset split to use.")
-    parser.add_argument(
-        "--text_column",
-        type=str,
-        default="text",
-        help="Column in the dataset containing the text.",
-    )
-    parser.add_argument(
-        "--per_gpu_max_memory",
-        type=int,
-        default=None,
-        help="Max memory used in each GPU.",
-    )
-    parser.add_argument("--cpu_max_memory", type=int, default=None, help="Mx memory used in CPU.")
-    parser.add_argument("--is_quantized", action="store_true", help="Is the model GPTQ quantized?")
-    parser.add_argument(
-        "--use_safetensors",
-        action="store_true",
-        help="Whether to use safetensors model file",
-    )
-    parser.add_argument("--use_fast_tokenizer", action="store_true", help="Wheter to use fast tokenizer")
-    parser.add_argument("--trust_remote_code", action="store_true", help="Whether to use remote code")
-    parser.add_argument(
-        "--disable_exllama",
-        action="store_true",
-        help="Whether to use disable exllama kernel",
-    )
+    parser.add_argument("--is_quantized", action="store_true", help="Is the model GPTQ quantized?", default=True)
+
     args = parser.parse_args()
-
-    # args_file_path = os.path.join(f"{args.quant_model_path.split('/')[0]}", f"eval_args_{args.quant_model_path.split('/')[-1]}")
-    # args_dict = vars(args)
     
-    # with open(args_file_path, 'w') as file:
-    #     json.dump(args_dict, file, indent=4)
-
     if args.is_quantized:
-        args.quantized_model_file_base_name = f'{args.model_name.split("/")[-1]}-gptq_w_bit_{args.bits}'
-        
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-        tokenizer = AutoTokenizer.from_pretrained(args.model_name, use_fast=args.use_fast_tokenizer)
+        
+        # args.model_path = 'llama-2-7b-awq-w_bit.4-group_size.128'
+        # args.model_path = 'quantized_deepseek-moe-16b-base-awq-w_bit4-group_size64'
+        
+        tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
         if not tokenizer.pad_token_id:
             tokenizer.pad_token_id = tokenizer.eos_token_id
 
-        max_memory = {}
-        if args.per_gpu_max_memory is not None and args.per_gpu_max_memory > 0:
-            if torch.cuda.is_available():
-                max_memory.update({i: f"{args.per_gpu_max_memory}GIB" for i in range(torch.cuda.device_count())})
-        if args.cpu_max_memory is not None and args.cpu_max_memory > 0 and max_memory:
-            max_memory["cpu"] = f"{args.cpu_max_memory}GIB"
-        if not max_memory:
-            max_memory = None
+        if 'deepseek' in args.model_path:
+            device_map = create_device_map(DEEPSEEK_MODEL_COMPONENTS)
+        else:
+            device_map = 'auto'
+            
+        model = AutoAWQForCausalLM.from_quantized(args.model_path, quant_file='', fuse_layers=False, device_map=device_map)
+    else:
+        if 'deepseek' in args.model_path:
+            device_map = create_device_map(DEEPSEEK_MODEL_COMPONENTS)
+        else:
+            device_map = 'auto'
+        model_name = "deepseek-ai/deepseek-moe-16b-base"
+        model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True, device_map=device_map)
+        tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
+        
+    for name, param in model.model.named_parameters():
+        print(name, param.dtype)
 
-        if args.use_safetensors:
-            print(
-                "The argument --use_safetensors is deprecrated and will be removed in the next release. It is now the default behavior."
-            )
+    total_params = sum(p.numel() for p in model.model.parameters() if p.requires_grad)
+    print("Total number of parameters:", total_params)
 
-        model = AutoGPTQForCausalLM_mixed_precision.from_quantized(
-            args.quant_model_path,
-            low_cpu_mem_usage=True,
-            device_map="auto",
-            max_memory=max_memory,
-            model_basename=args.quantized_model_file_base_name,
-            use_safetensors=True,
-            trust_remote_code=True,
-            inject_fused_mlp=False,
-            inject_fused_attention=False,
-            # disable_exllama=args.disable_exllama,
-        )
+    total_memory = sum(p.element_size() * p.numel() for p in model.model.parameters() if p.requires_grad)
+    print("Total memory used by model parameters (in bytes):", total_memory)
 
     all_metrics = {}
     
-    save_file_path = os.path.join(f"{args.quant_model_path.split('/')[0]}", f"eval_result_{args.quant_model_path.split('/')[-1]}")
+    save_file_path = os.path.join(f"{args.model_path}", f"eval_result_{args.model_path}")
     
-
     for task_kwargs in LM_EVAL_TASK_KWARGS_DICT.values():
         print(f"Evaluating task: {task_kwargs['task']}")
         task_name = task_kwargs["task"]
@@ -145,14 +125,15 @@ if __name__ == "__main__":
         for key, value in results["results"][task_name].items():
             if key.startswith(metric + ","):
                 all_metrics[f"{task_name}_{metric}"] = value
-
+                
+                
+        print(">>>>> Results <<<<<")
+        print(f"Metrics: {all_metrics}")
         with open(save_file_path, 'w') as file:
             json.dump(all_metrics, file, indent=4)
             
     print(">>>>> Results <<<<<")
-    if args.is_quantized:
-        print(f"Quantization on {args.model_name}")
-    else:
-        print(f"No quantization on {args.model_name}")
     print(f"Metrics: {all_metrics}")
+
+
 

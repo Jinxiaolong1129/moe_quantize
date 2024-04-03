@@ -2,7 +2,8 @@ import json
 import os
 from logging import getLogger
 from typing import List, Optional, Union
-
+import psutil
+import multiprocessing
 import accelerate
 import numpy as np
 import torch
@@ -14,9 +15,15 @@ from transformers.utils.hub import cached_file
 from ..utils.import_utils import dynamically_import_QuantLinear
 from ..utils.modeling_utils import recurse_setattr
 from ._const import CPU, CUDA_0, EXLLAMA_DEFAULT_MAX_INPUT_LENGTH, SUPPORTED_MODELS
+import time
+import logging
 
-
-logger = getLogger(__name__)
+logger = logging.getLogger(__name__)
+handler = logging.StreamHandler()
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 
 def get_device(obj: Union[torch.Tensor, nn.Module]):
@@ -365,20 +372,28 @@ def pack_model(
     warmup_triton: bool = False,
     force_layer_back_to_cpu: bool = False,
 ):
+    start_time = time.time()
     QuantLinear = dynamically_import_QuantLinear(
         use_triton=use_triton,
         desc_act=desc_act,
         group_size=group_size,
-        bits= 4, # TODO
+        bits=4,  # TODO: You may change this accordingly
         disable_exllama=False,
         disable_exllamav2=True,
         disable_marlin=True,
     )
+    end_time = time.time()
+    print("Time taken by dynamically_import_QuantLinear:", end_time - start_time, "seconds")
 
     if force_layer_back_to_cpu:
-        model.to(CPU)
-
+        start_time = time.time()
+        model.to("cpu")
+        end_time = time.time()
+        print("Time taken by model.to(CPU):", end_time - start_time, "seconds")
     logger.info("Packing model...")
+    print("Packing model...")
+    
+    
     layers = find_layers(model) 
     layers = {n: layers[n] for n in quantizers} # FIXME: mix_precision / full precision different
     make_quant(
@@ -393,8 +408,17 @@ def pack_model(
         disable_exllamav2=True,
     )
     qlayers = find_layers(model, [QuantLinear])
+    
     for name in qlayers:
         logger.info(f'{name} | starting packing')
+        print(f'{name} | starting packing')
+        
+        
+        # Log CPU usage before the operation
+        cpu_percent_before = psutil.cpu_percent(interval=1, percpu=True)
+        logger.info(f'CPU usage before packing {name}: {cpu_percent_before}%')
+
+
         quantizers[name], scale, zero, g_idx = quantizers[name]
         # so far can only pack layer on CPU
         layer_device = qlayers[name].device
@@ -407,13 +431,188 @@ def pack_model(
         )
         qlayers[name].pack(layers[name], scale, zero, g_idx)
         qlayers[name].to(layer_device)
+        
+        
+        cpu_percent_after = psutil.cpu_percent(interval=1, percpu=True)
+        logger.info(f'CPU usage after packing {name}: {cpu_percent_after}%')
+        
+        print(f'{name} | packed finish')
+        
     logger.info("Model packed.")
+    print("Model packed.")
 
     if use_triton and warmup_triton:
         logger.warning(
             "using autotune_warmup will move model to GPU, make sure you have enough VRAM to load the whole model."
         )
         QuantLinear.warmup(model.to(CUDA_0), seqlen=model.seqlen)
+
+
+def pack_model_mixed(
+    model,
+    quantizers,
+    bits,
+    group_size,
+    use_triton=False,
+    use_cuda_fp16=True,
+    desc_act=False,
+    warmup_triton: bool = False,
+    force_layer_back_to_cpu: bool = False,
+):
+    QuantLinear = dynamically_import_QuantLinear(
+        use_triton=use_triton,
+        desc_act=desc_act,
+        group_size=group_size,
+        bits= 4, # TODO
+        disable_exllama=False,
+        disable_exllamav2=True,
+        disable_marlin=True,
+    )
+
+    if force_layer_back_to_cpu:
+        start_time = time.time()
+        model.to("cpu")
+        end_time = time.time()
+        print("Time taken by model.to(CPU):", end_time - start_time, "seconds")
+    logger.info("Packing model...")
+    
+    
+    logger.info("Packing model...")
+    layers = find_layers(model) 
+    layers = {n: layers[n] for n in quantizers} # FIXME: mix_precision / full precision different
+    make_quant_mixed(
+        model,
+        quantizers,
+        bits,
+        group_size,
+        use_triton=use_triton,
+        use_cuda_fp16=use_cuda_fp16,
+        desc_act=desc_act,
+        disable_exllama=False,
+        disable_exllamav2=True,
+    )
+    qlayers = find_layers(model, [QuantLinear])
+    logger.info("find_layers packed.")
+    for name in qlayers:
+        logger.info(f'"========={name} | starting packing')
+
+        start_time = time.time()
+        quantizers[name], scale, zero, g_idx = quantizers[name]
+        # so far can only pack layer on CPU
+        layer_device = qlayers[name].device
+        qlayers[name].to(CPU)
+        layers[name], scale, zero, g_idx = (
+            layers[name].to(CPU),
+            scale.to(CPU),
+            zero.to(CPU),
+            g_idx.to(CPU),
+        )
+        qlayers[name].pack(layers[name], scale, zero, g_idx)
+        qlayers[name].to(layer_device)
+        elapsed_time = time.time() - start_time
+        logger.info(f"=========Pack model time: {elapsed_time}")
+            
+    logger.info("Model packed.")
+    
+
+    if use_triton and warmup_triton:
+        logger.warning(
+            "using autotune_warmup will move model to GPU, make sure you have enough VRAM to load the whole model."
+        )
+        QuantLinear.warmup(model.to(CUDA_0), seqlen=model.seqlen)
+
+
+
+def pack_single_layer_mixed(layer_details):
+    """
+    Function to pack a single model layer.
+    Arguments:
+        layer_details: A tuple containing the name of the layer and all other required information.
+    """
+    name, model, qlayers, layers, quantizers, scale, zero, g_idx, layer_device, CPU = layer_details
+
+    qlayers[name].to(CPU)
+    layers[name], scale, zero, g_idx = (
+        layers[name].to(CPU),
+        scale.to(CPU),
+        zero.to(CPU),
+        g_idx.to(CPU),
+    )
+    qlayers[name].pack(layers[name], scale, zero, g_idx)
+    qlayers[name].to(layer_device)
+
+    return f'{name} | packed finish'
+
+def pack_model_mixed_backup(
+    model,
+    quantizers,
+    bits,
+    group_size,
+    use_triton=False,
+    use_cuda_fp16=True,
+    desc_act=False,
+    warmup_triton: bool = False,
+    force_layer_back_to_cpu: bool = False,
+):
+    QuantLinear = dynamically_import_QuantLinear(
+        use_triton=use_triton,
+        desc_act=desc_act,
+        group_size=group_size,
+        bits= 4, # TODO
+        disable_exllama=False,
+        disable_exllamav2=True,
+        disable_marlin=True,
+    )
+
+    if force_layer_back_to_cpu:
+        start_time = time.time()
+        model.to("cpu")
+        end_time = time.time()
+        print("Time taken by model.to(CPU):", end_time - start_time, "seconds")
+    logger.info("Packing model...")
+    
+    
+    logger.info("Packing model...")
+    layers = find_layers(model) 
+    layers = {n: layers[n] for n in quantizers} # FIXME: mix_precision / full precision different
+    make_quant_mixed(
+        model,
+        quantizers,
+        bits,
+        group_size,
+        use_triton=use_triton,
+        use_cuda_fp16=use_cuda_fp16,
+        desc_act=desc_act,
+        disable_exllama=False,
+        disable_exllamav2=True,
+    )
+    qlayers = find_layers(model, [QuantLinear])
+    logger.info("find_layers packed.")
+    
+    # Preparing data for multiprocessing
+    layer_details_list = [
+        (name, model, qlayers, layers, quantizers[name], scale, zero, g_idx, qlayers[name].device, "cpu")
+        for name, (quantizer, scale, zero, g_idx) in quantizers.items()
+    ]
+
+    # Using multiprocessing to pack layers in parallel
+    # with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
+    with multiprocessing.Pool(processes=1) as pool:
+        results = pool.map(pack_single_layer_mixed, layer_details_list)
+        for result in results:
+            logger.info(result)
+            
+    logger.info("Model packed.")
+    
+
+    if use_triton and warmup_triton:
+        logger.warning(
+            "using autotune_warmup will move model to GPU, make sure you have enough VRAM to load the whole model."
+        )
+        QuantLinear.warmup(model.to(CUDA_0), seqlen=model.seqlen)
+
+
+
 
 
 def check_and_get_model_type(model_dir, trust_remote_code=False):

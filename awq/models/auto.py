@@ -59,7 +59,6 @@ class AutoAWQForCausalLM:
             model_path, trust_remote_code, **model_init_kwargs
         )
 
-
         # TODO (xiaolong): build model add key value to AWQ_CAUSAL_LM_MODEL_MAP and add new py to awq/models like lamma_moe.py
         return AWQ_CAUSAL_LM_MODEL_MAP[model_type].from_pretrained(
             model_path,
@@ -110,7 +109,6 @@ class AutoAWQForCausalLM:
             offload_folder=offload_folder,
             **config_kwargs,
         )
-
 
 
 

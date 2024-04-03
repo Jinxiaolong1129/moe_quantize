@@ -107,8 +107,11 @@ class HFLM(LM):
             )
             assert not parallelize, "`parallelize=True` is not compatible with passing pre-initialized model to `pretrained`"
             self._model = pretrained
-            self._device = self._model.device
-
+            if hasattr(self._model, "device"):
+                self._device = self._model.device
+            else:
+                self._device = 'cuda:0'
+                
             self._config = self._model.config
 
             if tokenizer:
@@ -199,7 +202,12 @@ class HFLM(LM):
 
         # access self._model through self.model property outside this method
         self.model.eval()
-        self.model.tie_weights()
+        
+        if hasattr(self.model, 'tie_weights'):
+            self.model.tie_weights()
+        else:
+            print("====The model does not have a tie_weights method.====")
+
 
         if isinstance(pretrained, str) and (gpus >= 1 or str(self.device) == "mps"):
             if not (parallelize or autogptq or ("device_map" in kwargs)):

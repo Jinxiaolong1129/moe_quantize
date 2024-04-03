@@ -4,8 +4,8 @@ sys.path.append("/home/LeiFeng/xiaolong/moe_quantize/optimum/")  # Add the path 
 
 
 import os
-os.environ['HF_HOME'] = '/home/LeiFeng/xiaolong/moe_quantize/hf_cache'
-os.makedirs(os.environ['HF_HOME'], exist_ok=True)
+# os.environ['HF_HOME'] = '/home/LeiFeng/xiaolong/moe_quantize/hf_cache'
+# os.makedirs(os.environ['HF_HOME'], exist_ok=True)
 
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
