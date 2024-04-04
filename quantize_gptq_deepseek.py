@@ -16,7 +16,7 @@ from auto_gptq import moe_quantize_config
 import logging
 import csv
 import time
-
+import os
 
 def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
     if split == "train":
@@ -40,6 +40,8 @@ def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
 def get_Pile_dataset(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
     data = load_dataset("json", data_files='data/minipile/val.jsonl.zst', split="train")
 
+    # custom_cache_dir = '/home/LeiFeng/xiaolong/moe_quantize/data/minipile/'
+    # data_back = load_dataset('mit-han-lab/pile-val-backup', cache_dir=custom_cache_dir)
 
     text = "".join([" \n" if s == "" else s for s in data["text"][:1000]])
 
@@ -635,10 +637,24 @@ def average_bit():
     
     log_data = []
     
-    for bits in ['all_2', 'all_4', 'all_8', 'moe.all_mlp.2+other_block.4', 
-                'moe.shared_4.other.2+other_block_4', 'moe.shared_2.other.4+other_block_4', 
-                'moe.all_mlp.4+other_block.8', 'moe.shared_4.other.2+other_block.8', 
-                'moe.shared_2.other.4+other_block.8']:
+    def extract_bits(filename):
+        """Extract the bits part from the filename."""
+        try:
+            return filename.split("_w_bit_")[1].split("_pile")[0]
+        except IndexError:
+            return None
+
+    eval_bits = []
+
+    for filename in os.listdir('autogptq_eval_result/deepseek-moe-16b-base'):
+        if filename.startswith("eval_result_deepseek-moe-16b-base-gptq_w_bit_") and filename.endswith("_pile"):
+            bits = extract_bits(filename)
+            eval_bits.append(bits)
+
+    print(f"len(eval_bits): {len(eval_bits)}")
+    
+    
+    for bits in eval_bits:
         args.bits = bits
         
         deeepseek_bit = moe_quantize_config(args)
@@ -650,8 +666,6 @@ def average_bit():
         total_bits = 0
         total_params = 0
         
-        weights_count = {}
-
         # for name, module in model.named_modules():
         #     if hasattr(module, 'weight'):
         #         weights_count[name] = [module.weight.numel(), module.weight.shape]
@@ -769,10 +783,10 @@ def main():
         model_file_base_name = quantized_model_file_base_name
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name)
+    quantization_dataset = get_Pile_dataset(tokenizer=tokenizer, seqlen=args.seqlen, nsamples=args.nsamples, split="train")
 
     model = AutoGPTQForCausalLM_mixed_precision.from_pretrained(model_name, quantize_config, torch_dtype=torch.float16, trust_remote_code=True)
     
-    quantization_dataset = get_Pile_dataset(tokenizer=tokenizer, seqlen=args.seqlen, nsamples=args.nsamples, split="train")
 
     logging.info(f"Quantization dataset loaded with {args.nsamples} samples")
     logging.info(f"Quantization dataset loaded with {args.seqlen} seq len")

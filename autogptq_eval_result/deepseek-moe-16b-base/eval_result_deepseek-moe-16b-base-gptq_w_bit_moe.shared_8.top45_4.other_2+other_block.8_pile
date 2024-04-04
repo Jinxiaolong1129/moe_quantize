@@ -1,0 +1,10 @@
+{
+    "winogrande_acc": 0.6929755327545383,
+    "copa_acc": 0.9,
+    "hellaswag_acc_norm": 0.7509460266879108,
+    "lambada_openai_acc": 0.736270133902581,
+    "rte_acc": 0.6245487364620939,
+    "piqa_acc": 0.7850924918389554,
+    "openbookqa_acc_norm": 0.41,
+    "mmlu_acc": 0.4364050705027774
+}

@@ -1,6 +1,5 @@
 .DS_Store
 
-data/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -171,7 +170,6 @@ __pycache__
 
 awq_quantize_model/
 autogptq_quantize_model/
-data/
 autogptq_deepseek-ai/
 hf_cache/
-# save/
+# data/

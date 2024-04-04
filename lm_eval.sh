@@ -7,7 +7,6 @@ quant_model_path=(
     # NOTE running on 0,1,2
     # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top2_4.other_2+other_block.4'
     # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top2_8.other_2+other_block.8'
-
     # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top1_8.other_2+other_block.8'
     # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top2_8.other_2+other_block.8'
     # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top2_4.other_2+other_block.8'
@@ -17,7 +16,6 @@ quant_model_path=(
 
     # NOTE running on 3,4,5
     # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top1_8.other_2+other_block.4'
-
     # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top1_4.other_2+other_block.4'
     # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top1_4.other_2+other_block.8'
     # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top2_8.other_2+other_block.4'
@@ -27,15 +25,31 @@ quant_model_path=(
     # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top20_4.other_2+other_block.4'
 
     # NOTE running on 6,7
-    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top25_4.other_2+other_block.4'
-    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top30_4.other_2+other_block.4'
-    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top35_4.other_2+other_block.4'
-    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top45_4.other_2+other_block.4'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top25_4.other_2+other_block.4'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top30_4.other_2+other_block.4'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top35_4.other_2+other_block.4'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top45_4.other_2+other_block.4'
+    
+
+    # NOTE running on 0,1,2
+    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top15_4.other_2+other_block.8'
+    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top2_8.other_2+other_block.8'
+    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top5_4.other_2+other_block.8'
+
+    # NOTE running on 3,4,5
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top25_4.other_2+other_block.8'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top45_4.other_2+other_block.8'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top35_4.other_2+other_block.8'
+
+    # # NOTE running on 6,7
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top20_4.other_2+other_block.8'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top30_4.other_2+other_block.8'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top10_4.other_2+other_block.8'
 )
 
 echo "Bash start running..."
 
-export CUDA_VISIBLE_DEVICES=6,7
+export CUDA_VISIBLE_DEVICES=0,1,2
 echo "CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
 
@@ -155,3 +169,7 @@ done
 #     --quant_model_path autogptq_deepseek-ai/deepseek-moe-16b-chat-gptq_w_bit_moe.shared_2.other.4+other_block.8 \
 #     --bits moe.shared_2.other.4+other_block.8 \
 #     --is_quantized 
+
+
+
+# autogptq_deepseek-ai

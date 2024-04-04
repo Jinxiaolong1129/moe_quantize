@@ -5,5 +5,6 @@
     "lambada_openai_acc": 0.713370851930914,
     "rte_acc": 0.5848375451263538,
     "piqa_acc": 0.7714907508161044,
-    "openbookqa_acc_norm": 0.392
+    "openbookqa_acc_norm": 0.392,
+    "mmlu_acc": 0.4106252670559749
 }
