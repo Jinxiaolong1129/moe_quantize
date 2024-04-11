@@ -188,6 +188,8 @@ class WQLinear_GEMM(nn.Module):
                 order_map = [0, 2, 4, 6, 1, 3, 5, 7]
             elif awq_linear.w_bit == 8:
                 order_map = list(range(4))  # Order map for 8-bit quantization
+                print(f'order_map: {order_map}')
+                
             elif awq_linear.w_bit == 2:
                 order_map = list(range(pack_num))  # Order map for 2-bit quantization
             else:
@@ -215,7 +217,9 @@ class WQLinear_GEMM(nn.Module):
             if awq_linear.w_bit == 4:
                 order_map = [0, 2, 4, 6, 1, 3, 5, 7]
             elif awq_linear.w_bit == 8:
-                order_map = list(range(8))  # Order map for 8-bit quantization
+                order_map = list(range(4))  # Order map for 8-bit quantization
+                print(f'order_map: {order_map}')
+                
             elif awq_linear.w_bit == 2:
                 order_map = list(range(pack_num))  # Order map for 2-bit quantization
             else:
@@ -225,7 +229,7 @@ class WQLinear_GEMM(nn.Module):
                 qzero_col = zeros[:, col * pack_num + order_map[i]]
                 qzeros[:, col] |= qzero_col << (i * awq_linear.w_bit)
         awq_linear.qzeros = qzeros
-
+        # FIXME pack model no bug
         return awq_linear
 
     def forward(self, x):
@@ -466,3 +470,5 @@ class WQLinear_GEMM_backup_code(nn.Module):
                 self.group_size,
             )
         )
+
+

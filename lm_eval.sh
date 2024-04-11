@@ -1,7 +1,7 @@
 
 #!/bin/bash
 
-export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
+export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/lm_eval/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
 
 quant_model_path=(
     # NOTE running on 0,1,2
@@ -57,7 +57,7 @@ for i in "${!quant_model_path[@]}"; do
     nohup python lm_eval.py \
         --model_name 'deepseek-ai/deepseek-moe-16b-base' \
         --quant_model_path autogptq_deepseek-ai/${quant_model_path[$i]} \
-        --is_quantized > "eval_mmlu_${quant_model_path[$i]}.log" 2>&1
+        --is_quantized > "eval_${quant_model_path[$i]}.log" 2>&1
 
     echo "Running ${quant_model_path[$i]} on CUDA device"
     echo "CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
