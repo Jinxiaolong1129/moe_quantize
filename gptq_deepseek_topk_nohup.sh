@@ -1,15 +1,16 @@
 #!/bin/bash
 
-export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
+export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
 
-topx_values=(5 10 15 20 25 30 35 45)
+topx_values=(1 2 5 10 15 20 25 30 35 40)
 
-gpus=(5 6)
+# gpus=(4 5 6 7)
+gpus=(0 1 2 3)
 gpu_idx=0
 task_count=0
 
 for topx in "${topx_values[@]}"; do
-    bit="moe.shared_8.top${topx}_4.other_2+other_block.8"
+    bit="moe.shared_4.top${topx}_8.other_2+other_block.8"
     
     # Assign a GPU from the list
     export CUDA_VISIBLE_DEVICES=${gpus[$gpu_idx]}
@@ -19,7 +20,7 @@ for topx in "${topx_values[@]}"; do
         --model_name deepseek-ai/deepseek-moe-16b-base \
         --nsamples 512 \
         --group_size 64 \
-        --bits "$bit" > run_log/log_cuda_${gpus[$gpu_idx]}_top${topx}.out &
+        --bits "$bit" > run_log/gptq/log_${bit}.out &
     
     echo "Started experiment with top${topx} | bits ${bit} on GPU ${gpus[$gpu_idx]}"
     
@@ -34,5 +35,4 @@ for topx in "${topx_values[@]}"; do
     fi
 done
 
-# After the loop, ensure to wait for any remaining tasks to complete
 wait

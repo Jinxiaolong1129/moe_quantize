@@ -19,7 +19,8 @@ def pack(imatrix: torch.Tensor, direction: str = "column"):
         direction (str): direction of packing, either "column" or "row"
 
     Returns:
-        qmatrix (torch.Tensor): packed matrix of integers
+        qmatrix (tor
+        ch.Tensor): packed matrix of integers
     """
     shifts = torch.arange(0, STORAGE_BITS, Q_BITS, device=imatrix.device)
 

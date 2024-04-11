@@ -6,23 +6,71 @@ AWQ_REVERSE_ORDER = [0, 4, 1, 5, 2, 6, 3, 7]
 
 
 def unpack_awq(qweight: torch.Tensor, qzeros: torch.Tensor, bits: int):
-    shifts = torch.arange(0, 32, bits, device=qzeros.device)
+    if bits == 4:
+        shifts = torch.arange(0, 32, bits, device=qzeros.device)
 
-    # unpacking columnwise
-    iweights = torch.bitwise_right_shift(qweight[:, :, None], shifts[None, None, :]).to(
-        torch.int8  # smallest dtype available
-    )
-    iweights = iweights.view(iweights.shape[0], -1)
+        # unpacking columnwise
+        iweights = torch.bitwise_right_shift(qweight[:, :, None], shifts[None, None, :]).to(
+            torch.int8  # smallest dtype available
+        )
+        iweights = iweights.view(iweights.shape[0], -1)
 
-    # unpacking columnwise
-    izeros = torch.bitwise_right_shift(qzeros[:, :, None], shifts[None, None, :]).to(
-        torch.int8  # smallest dtype available
-    )
-    izeros = izeros.view(izeros.shape[0], -1)
+        # unpacking columnwise
+        izeros = torch.bitwise_right_shift(qzeros[:, :, None], shifts[None, None, :]).to(
+            torch.int8  # smallest dtype available
+        )
+        izeros = izeros.view(izeros.shape[0], -1)
 
-    return iweights, izeros
+        return iweights, izeros
+    
+    elif bits == 8:
+        shifts = torch.arange(0, 32, bits, device=qzeros.device)
 
+        # unpacking columnwise
+        iweights = torch.bitwise_right_shift(qweight[:, :, None], shifts[None, None, :]).to(
+            torch.uint8  # smallest dtype available
+        )
+        iweights = iweights.view(iweights.shape[0], -1)
 
+        # unpacking columnwise
+        izeros = torch.bitwise_right_shift(qzeros[:, :, None], shifts[None, None, :]).to(
+            torch.uint8  # smallest dtype available
+        )
+        izeros = izeros.view(izeros.shape[0], -1)
+
+        return iweights, izeros
+
+    elif bits == 2:
+        w_bit = bits
+        qweight_shape = qweight.shape  
+        
+        pack_num = 32 // w_bit
+        qweight_unpacked = torch.zeros((qweight_shape[0], qweight_shape[1] * pack_num), dtype=torch.int32)
+
+        for col in range(qweight_shape[1]):
+            for i in range(pack_num):
+                mask = (1 << w_bit) - 1
+                mask = mask << (i * w_bit)
+                extracted_bits = (qweight[:, col] & mask) >> (i * w_bit)
+                qweight_unpacked[:, col * pack_num + i] = extracted_bits
+
+                qweight_shape = qweight.shape  
+        
+        qzeros_shape = qzeros.shape
+        qzeros_unpacked = torch.zeros((qzeros_shape[0], qzeros_shape[1] * pack_num), dtype=torch.int32)
+
+        for col in range(qzeros_shape[1]):
+            for i in range(pack_num):
+                mask = (1 << w_bit) - 1
+                mask = mask << (i * w_bit)
+                extracted_bits = (qweight[:, col] & mask) >> (i * w_bit)
+                qzeros_unpacked[:, col * pack_num + i] = extracted_bits
+
+        return qweight_unpacked, qzeros_unpacked
+    
+    
+    
+    
 def reverse_awq_order(iweights: torch.Tensor, izeros: torch.Tensor, bits: int):
     if bits == 4:
         reverse_order_tensor = torch.arange(
@@ -93,7 +141,7 @@ def unpack_reorder_pack(qweight, qzeros, bits):
 
 def dequantize_gemm(qweight, qzeros, scales, bits, group_size):
     # Unpack the qweight and qzeros tensors
-    iweight, izeros = unpack_awq(qweight, qzeros, bits)
+    iweight, izeros = unpack_awq(qweight, qzeros, bits) # FIXME bits 8 有错
     # Reverse the order of the iweight and izeros tensors
     iweight, izeros = reverse_awq_order(iweight, izeros, bits)
 

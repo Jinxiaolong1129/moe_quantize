@@ -158,6 +158,7 @@ class AwqQuantizer:
             clear_memory()
 
             # NOTE (xioalong): AWQ algorithm
+            # BUG 
             # [STEP 2]: Compute and apply scale list. # important
             module_config: List[Dict] = self.awq_model.get_layers_for_scaling(
                 self.modules[i], input_feat, self.module_kwargs
@@ -202,7 +203,7 @@ class AwqQuantizer:
         for name, linear_layer in named_linears.items():
             logger.info(f'quantize finished | {name}')
             linear_layer = linear_layer.to(get_best_device()).half()
-
+            # BUG 
             linear_layer.weight.data, scales, zeros = self.pseudo_quantize_tensor(
                 linear_layer.weight.data
             )

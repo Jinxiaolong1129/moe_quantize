@@ -1,49 +1,43 @@
 
 #!/bin/bash
 
-export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
+export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/lm_eval/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
 
 quant_model_path=(
-    # NOTE running on 0,1,2
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top2_4.other_2+other_block.4'
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top2_8.other_2+other_block.8'
+    # NOTE runing on 2,1,0
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top10_4.other_2+other_block.8'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top1_8.other_2+other_block.8'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top25_8.other_2+other_block.8'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top20_4.other_2+other_block.8'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top5_4.other_2+other_block.8'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top15_4.other_2+other_block.8'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top5_8.other_2+other_block.8'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top10_8.other_2+other_block.8'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top30_4.other_2+other_block.8'
+    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top30_8.other_2+other_block.8'
 
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top1_8.other_2+other_block.8'
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top2_8.other_2+other_block.8'
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top2_4.other_2+other_block.8'
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top2_4.other_2+other_block.8'
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top2_8.other_2+other_block.4'
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top2_4.other_2+other_block.4'
 
-    # NOTE running on 3,4,5
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top1_8.other_2+other_block.4'
-
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top1_4.other_2+other_block.4'
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top1_4.other_2+other_block.8'
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top2_8.other_2+other_block.4'
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top5_4.other_2+other_block.4'
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top10_4.other_2+other_block.4'
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top15_4.other_2+other_block.4'
-    # 'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top20_4.other_2+other_block.4'
-
-    # NOTE running on 6,7
-    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top25_4.other_2+other_block.4'
-    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top30_4.other_2+other_block.4'
-    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top35_4.other_2+other_block.4'
-    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.top45_4.other_2+other_block.4'
+    # # NOTE runing on 3,4,5
+    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top20_8.other_2+other_block.8'
+    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top40_4.other_2+other_block.8'
+    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top2_8.other_2+other_block.8'
+    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top1_4.other_2+other_block.8'
+    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top15_8.other_2+other_block.8'
+    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top2_4.other_2+other_block.8'
+    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top35_4.other_2+other_block.8'
+    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top25_4.other_2+other_block.8'
 )
 
-echo "Bash start running..."
-
-export CUDA_VISIBLE_DEVICES=6,7
+export CUDA_VISIBLE_DEVICES=3,4,5
 echo "CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
+echo "Bash start running..."
 
 
 for i in "${!quant_model_path[@]}"; do
     nohup python lm_eval.py \
         --model_name 'deepseek-ai/deepseek-moe-16b-base' \
         --quant_model_path autogptq_deepseek-ai/${quant_model_path[$i]} \
-        --is_quantized > "eval_mmlu_${quant_model_path[$i]}.log" 2>&1
+        --is_quantized > "eval_${quant_model_path[$i]}.log" 2>&1
 
     echo "Running ${quant_model_path[$i]} on CUDA device"
     echo "CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"

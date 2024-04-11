@@ -2,7 +2,6 @@ import sys
 print(sys.path)
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from optimum.gptq import GPTQQuantizer, load_quantized_model, GPTQQuantizer_deepseek
 import torch
 import random
 from argparse import ArgumentParser
@@ -38,8 +37,10 @@ def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
 
 
 def get_Pile_dataset(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
-    data = load_dataset("json", data_files='data/minipile/val.jsonl.zst', split="train")
+    # data = load_dataset("json", data_files='data/minipile/val.jsonl.zst', split="train")
 
+    custom_cache_dir = '/home/LeiFeng/xiaolong/moe_quantize/data/minipile/'
+    data = load_dataset('mit-han-lab/pile-val-backup', cache_dir=custom_cache_dir)['validation']
 
     text = "".join([" \n" if s == "" else s for s in data["text"][:1000]])
 
