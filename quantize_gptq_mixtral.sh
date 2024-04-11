@@ -1,4 +1,4 @@
-device_idx=2
+device_idx=0
 
 
 # MOST USED
