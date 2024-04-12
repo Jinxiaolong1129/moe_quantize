@@ -38,7 +38,7 @@ for bits in 2 4
 do
     DEBUG=0 CUDA_VISIBLE_DEVICES=$device_idx python quantize_gptq_mixtral.py \
       --model_name mistralai/Mixtral-8x7B-v0.1 \
-      --bits main_$bits.exp_l0e0_8.exp_l1e3_8.exp_l2e0_8.exp_l3e4_8 \
+      --bits main_$bits.exp_l0e0_8.exp_l1e3_8.exp_l2e0_8.exp_l3e4_8.exp_l4e5_8.exp_l5e6_8.exp_l6e4_8.exp_l7e0_8.exp_l8e1_8.exp_l9e7_8.exp_l10e4_8.exp_l11e5_8.exp_l12e2_8.exp_l13e0_8.exp_l14e2_8.exp_l15e3_8 \
       --bits_name main_$bits.most_mass_top-16-layer &
 
     device_idx=$((device_idx+1))
