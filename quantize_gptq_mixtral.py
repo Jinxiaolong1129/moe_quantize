@@ -37,36 +37,29 @@ def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
 
 def mixtral_quantize_config(bits_config_str: str):
     mixtral_bit = dict()
-
     # The main weight bits
     main_bits = re.search(r"main_(\d)", bits_config_str)
     if main_bits is None:
         raise ValueError(f"Invalid bits config string: {bits_config_str}")
-
     main_bits = int(main_bits.group(1))
     moe_block_bit_dict = {}
-
     for i in range(4):
         key = f"self_attn.{['q_proj', 'k_proj', 'v_proj', 'o_proj'][i]}"
         moe_block_bit_dict[key] = main_bits
-
     for i in range(8):
         for part in ['w1', 'w2', 'w3']:
             key = f"block_sparse_moe.experts.{i}.{part}"
             moe_block_bit_dict[key] = main_bits
-
     for block_num in range(0, 32):
         for layer in moe_block_bit_dict:
             key = f'model.layers.{block_num}' + '.' + layer
             mixtral_bit[key] = moe_block_bit_dict[layer]
-
     # Special expert bits, e.g. "exp_l1e3_16": 16-bit for expert 3 in layer 1
-    special_expert_bits = re.findall(r"exp_l(\d)e(\d)_(\d+)", bits_config_str)
+    special_expert_bits = re.findall(r"exp_l(\d+)e(\d+)_(\d+)", bits_config_str)
     for layer, expert, bits in special_expert_bits:
         for part in ['w1', 'w2', 'w3']:
             key = f"model.layers.{int(layer)}.block_sparse_moe.experts.{int(expert)}.{part}"
             mixtral_bit[key] = int(bits)
-
     return mixtral_bit
 
 
