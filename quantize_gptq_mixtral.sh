@@ -13,14 +13,15 @@ device_idx=0
 #done
 
 # ONE KEY EXPERT
-#for bits in 2 4
-#do
-#    DEBUG=0 CUDA_VISIBLE_DEVICES=$device_idx python quantize_gptq_mixtral.py \
-#      --model_name mistralai/Mixtral-8x7B-v0.1 \
-#      --bits main_$bits.exp_l1e3_8 &
-#
-#    device_idx=$((device_idx+1))
-#done
+for bits in 2 4
+do
+    DEBUG=0 CUDA_VISIBLE_DEVICES=$device_idx python quantize_gptq_mixtral.py \
+      --model_name mistralai/Mixtral-8x7B-v0.1 \
+      --bits main_$bits.exp_l1e3_8 \
+      --bits_name main_$bits.exp_l1e3_8 &
+
+    device_idx=$((device_idx+1))
+done
 
 # MASSIVE EXPERTS
 #for bits in 2 4
@@ -34,12 +35,12 @@ device_idx=0
 #done
 
 # TOP-2 MASSIVE EXPERTS
-for bits in 2 4
-do
-    DEBUG=0 CUDA_VISIBLE_DEVICES=$device_idx python quantize_gptq_mixtral.py \
-      --model_name mistralai/Mixtral-8x7B-v0.1 \
-      --bits main_$bits.exp_l0e0_8.exp_l1e3_8 \
-      --bits_name main_$bits.most_mass_top-2-layer &
-
-    device_idx=$((device_idx+1))
-done
+#for bits in 2 4
+#do
+#    DEBUG=0 CUDA_VISIBLE_DEVICES=$device_idx python quantize_gptq_mixtral.py \
+#      --model_name mistralai/Mixtral-8x7B-v0.1 \
+#      --bits main_$bits.exp_l0e0_8.exp_l1e3_8 \
+#      --bits_name main_$bits.most_mass_top-2-layer &
+#
+#    device_idx=$((device_idx+1))
+#done
