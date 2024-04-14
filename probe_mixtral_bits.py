@@ -25,13 +25,13 @@ def _compute_average_bit(model, bits_dict):
 
 
 def calculate_mixtral_num_experts_to_add_bits(
-        bits_config_str: str, expert_add_bits: int, target_average_bits: int
+        bits_str: str, expert_add_bits: int, target_average_bits: int
 ):
     mixtral_bits = dict()
     # The main weight bits
-    main_bits = re.search(r"main_(\d)", bits_config_str)
+    main_bits = re.search(r"main_(\d)", bits_str)
     if main_bits is None:
-        raise ValueError(f"Invalid bits config string: {bits_config_str}")
+        raise ValueError(f"Invalid bits config string: {bits_str}")
     main_bits = int(main_bits.group(1))
     moe_block_bit_dict = {}
     for i in range(4):
@@ -46,7 +46,7 @@ def calculate_mixtral_num_experts_to_add_bits(
             key = f'model.layers.{block_num}' + '.' + layer
             mixtral_bits[key] = moe_block_bit_dict[layer]
     # Special expert bits, e.g. "exp_l1e3_16": 16-bit for expert 3 in layer 1
-    special_expert_bits = re.findall(r"exp_l(\d+)e(\d+)_(\d+)", bits_config_str)
+    special_expert_bits = re.findall(r"exp_l(\d+)e(\d+)_(\d+)", bits_str)
     for layer, expert, bits in special_expert_bits:
         for part in ['w1', 'w2', 'w3']:
             key = f"model.layers.{int(layer)}.block_sparse_moe.experts.{int(expert)}.{part}"
