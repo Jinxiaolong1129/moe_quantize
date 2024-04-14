@@ -84,8 +84,8 @@ def deepseek_routing_top_trace(
         with torch.no_grad():
             outputs = model(**batch, output_router_logits=True)
         all_router_logits = outputs.router_logits
-        all_router_logits = torch.stack(
-            all_router_logits)  # of shape (num_hidden_layers, num_tokens, num_local_experts)
+        all_router_logits = torch.stack(all_router_logits)
+        # of shape (num_hidden_layers, num_tokens, num_local_experts)
         
         selected_experts = torch.topk(all_router_logits, k=config.num_experts_per_tok, dim=-1, sorted=False)[1].reshape(
             config.num_hidden_layers-1, -1)
