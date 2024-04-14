@@ -9,6 +9,23 @@ from auto_gptq import (AutoGPTQForCausalLM_mixed_precision, BaseQuantizeConfig_m
 from fire import Fire
 
 
+def _trial_loop(model, mixtral_bits, expert_add_bits, target_average_bits):
+    num_experts_add_bits = 0
+    for block_num in range(0, 32):
+        for expert_id in range(0, 8):
+            if all(mixtral_bits[
+                       f"model.layers.{block_num}.block_sparse_moe.experts.{expert_id}.{part}"] < expert_add_bits
+                   for part in ['w1', 'w2', 'w3']):
+                for part in ['w1', 'w2', 'w3']:
+                    mixtral_bits[
+                        f"model.layers.{block_num}.block_sparse_moe.experts.{expert_id}.{part}"] = expert_add_bits
+                num_experts_add_bits += 1
+                if _compute_average_bit(model, mixtral_bits) >= target_average_bits:
+                    return num_experts_add_bits, mixtral_bits
+
+    return num_experts_add_bits, mixtral_bits
+
+
 def _compute_average_bit(model, bits_dict):
     total_bits = 0
     total_num_params = 0
@@ -67,18 +84,7 @@ def calculate_mixtral_num_experts_to_add_bits(
     before_bits = _compute_average_bit(model, mixtral_bits)
 
     # Calculate the average bit-width of the model
-    num_experts_add_bits = 0
-    for block_num in range(0, 32):
-        for expert_id in range(0, 8):
-            if all(mixtral_bits[
-                       f"model.layers.{block_num}.block_sparse_moe.experts.{expert_id}.{part}"] < expert_add_bits
-                   for part in ['w1', 'w2', 'w3']):
-                for part in ['w1', 'w2', 'w3']:
-                    mixtral_bits[
-                        f"model.layers.{block_num}.block_sparse_moe.experts.{expert_id}.{part}"] = expert_add_bits
-                num_experts_add_bits += 1
-                if _compute_average_bit(model, mixtral_bits) >= target_average_bits:
-                    break
+    num_experts_add_bits, mixtral_bits = _trial_loop(model, mixtral_bits, expert_add_bits, target_average_bits)
 
     print("=====================================")
     print(f"Bits config: {bits_config_str}")
