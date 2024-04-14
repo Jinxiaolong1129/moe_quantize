@@ -5,8 +5,9 @@ import sys
 
 import torch
 from torch.nn import functional as F
-from transformers import AutoModelForCausalLM
 from tqdm import tqdm
+from transformers import AutoModelForCausalLM
+
 sys.path.append("/home/LeiFeng/pingzhi/moe_quantize/optimum/")  # Add the path to Python's search path
 import random
 
@@ -43,7 +44,7 @@ def mixtral_task_specific_expert_pruning_inference(global_ranking: bool = True):
 
     all_router_logits = []
 
-    for i in tqdm(range(0, len(dataset), 8), desc="Inference"):
+    for i in tqdm(range(0, len(dataset), 2), desc="Inference"):
         input_ids = torch.cat([d["input_ids"] for d in dataset[i: i + 32]], dim=0)
         attention_mask = torch.cat([d["attention_mask"] for d in dataset[i: i + 32]], dim=0)
         with torch.no_grad():
