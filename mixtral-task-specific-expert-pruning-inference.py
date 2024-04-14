@@ -35,7 +35,7 @@ def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
     return dataset
 
 
-def mixtral_task_specific_expert_pruning_inference(global_ranking: bool = True):
+def mixtral_task_specific_expert_pruning_inference(global_ranking: bool = True, batch_size: int = 8):
     model = AutoModelForCausalLM.from_pretrained(
         "mistralai/Mixtral-8x7B-v0.1", device_map="auto", torch_dtype=torch.float16
     ).eval()
@@ -44,8 +44,8 @@ def mixtral_task_specific_expert_pruning_inference(global_ranking: bool = True):
 
     all_router_logits = []
 
-    for i in tqdm(range(0, len(dataset), 2), desc="Inference"):
-        input_ids = torch.cat([d["input_ids"] for d in dataset[i: i + 32]], dim=0)
+    for i in tqdm(range(0, len(dataset), batch_size), desc="Inference"):
+        input_ids = torch.cat([d["input_ids"] for d in dataset[i: i + batch_size]], dim=0)
         attention_mask = torch.cat([d["attention_mask"] for d in dataset[i: i + 32]], dim=0)
         with torch.no_grad():
             outputs = model(input_ids=input_ids, attention_mask=attention_mask, output_router_logits=True)
