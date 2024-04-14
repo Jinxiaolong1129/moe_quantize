@@ -53,7 +53,7 @@ def mixtral_task_specific_expert_pruning_inference(global_ranking: bool = True, 
         # of shape (num_hidden_layers, num_tokens, num_local_experts)
         all_router_logits.append(router_logits)
 
-    all_router_logits = torch.cat(all_router_logits, dim=1)
+    all_router_logits = torch.cat(all_router_logits, dim=1).to(torch.float32)
     all_router_weights = F.softmax(all_router_logits, dim=-1)
     expert_proficiency = all_router_weights.mean(dim=1)  # of shape (num_hidden_layers, num_local_experts)
 
@@ -62,8 +62,8 @@ def mixtral_task_specific_expert_pruning_inference(global_ranking: bool = True, 
     num_experts = config.num_local_experts
     num_layers = config.num_hidden_layers
 
+    # an expert at (layer, expert_id) is denoted as "exp_l{layer}e{expert_id}"
     if global_ranking:
-        # an expert at (layer, expert_id) is denoted as "exp_l{layer}e{expert_id}"
         expert_ranking = []
         for layer in range(num_layers):
             for expert_id in range(num_experts):
