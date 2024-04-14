@@ -12,6 +12,7 @@ import random
 
 from transformers import AutoTokenizer
 from datasets import load_dataset
+from fire import Fire
 
 
 def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
@@ -73,3 +74,7 @@ def mixtral_task_specific_expert_pruning_inference(global_ranking: bool = True):
             expert_proficiency_layer = expert_proficiency[layer]
             expert_ranking = expert_proficiency_layer.argsort(descending=True)
             print(f"Layer {layer}:", [f"exp_l{layer}e{expert_id}" for expert_id in expert_ranking])
+
+
+if __name__ == "__main__":
+    Fire(mixtral_task_specific_expert_pruning_inference)
