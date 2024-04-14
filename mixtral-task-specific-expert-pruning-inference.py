@@ -46,7 +46,7 @@ def mixtral_task_specific_expert_pruning_inference(global_ranking: bool = True, 
 
     for i in tqdm(range(0, len(dataset), batch_size), desc="Inference"):
         input_ids = torch.cat([d["input_ids"] for d in dataset[i: i + batch_size]], dim=0)
-        attention_mask = torch.cat([d["attention_mask"] for d in dataset[i: i + 32]], dim=0)
+        attention_mask = torch.cat([d["attention_mask"] for d in dataset[i: i + batch_size]], dim=0)
         with torch.no_grad():
             outputs = model(input_ids=input_ids, attention_mask=attention_mask, output_router_logits=True)
         router_logits = torch.stack(outputs.router_logits, dim=0)
