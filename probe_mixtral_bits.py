@@ -68,16 +68,17 @@ def calculate_mixtral_num_experts_to_add_bits(
 
     # Calculate the average bit-width of the model
     num_experts_add_bits = 0
-    while _compute_average_bit(model, mixtral_bits) < target_average_bits:
-        for block_num in range(0, 32):
-            for expert_id in range(0, 8):
-                if all(mixtral_bits[
-                           f"model.layers.{block_num}.block_sparse_moe.experts.{expert_id}.{part}"] < expert_add_bits
-                       for part in ['w1', 'w2', 'w3']):
-                    for part in ['w1', 'w2', 'w3']:
-                        mixtral_bits[
-                            f"model.layers.{block_num}.block_sparse_moe.experts.{expert_id}.{part}"] = expert_add_bits
-                    num_experts_add_bits += 1
+    for block_num in range(0, 32):
+        for expert_id in range(0, 8):
+            if all(mixtral_bits[
+                       f"model.layers.{block_num}.block_sparse_moe.experts.{expert_id}.{part}"] < expert_add_bits
+                   for part in ['w1', 'w2', 'w3']):
+                for part in ['w1', 'w2', 'w3']:
+                    mixtral_bits[
+                        f"model.layers.{block_num}.block_sparse_moe.experts.{expert_id}.{part}"] = expert_add_bits
+                num_experts_add_bits += 1
+                if _compute_average_bit(model, mixtral_bits) >= target_average_bits:
+                    break
 
     print("=====================================")
     print(f"Bits config: {bits_config_str}")
