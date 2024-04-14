@@ -44,3 +44,9 @@ done
 #
 #    device_idx=$((device_idx+1))
 #done
+
+# All Task-specific (44 experts)
+DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
+      --model_name mistralai/Mixtral-8x7B-v0.1 \
+      --bits main_2.exp_l30e7_8.exp_l31e3_8.exp_l28e4_8.exp_l31e1_8.exp_l29e7_8.exp_l27e2_8.exp_l23e1_8.exp_l8e0_8.exp_l2e0_8.exp_l24e1_8.exp_l12e0_8.exp_l21e0_8.exp_l20e6_8.exp_l12e1_8.exp_l26e4_8.exp_l11e1_8.exp_l31e2_8.exp_l29e6_8.exp_l6e5_8.exp_l17e1_8.exp_l31e7_8.exp_l0e5_8.exp_l0e2_8.exp_l15e2_8.exp_l19e0_8.exp_l4e3_8.exp_l16e3_8.exp_l11e4_8.exp_l18e2_8.exp_l3e2_8.exp_l16e7_8.exp_l10e1_8.exp_l2e1_8.exp_l17e5_8.exp_l1e4_8.exp_l26e3_8.exp_l4e2_8.exp_l9e3_8.exp_l13e4_8.exp_l25e4_8.exp_l14e4_8.exp_l20e2_8.exp_l27e5_8.exp_l24e2_8 \
+      --bits_name main_2.task_specific_avg_3bits

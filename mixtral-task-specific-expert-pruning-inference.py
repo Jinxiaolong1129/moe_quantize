@@ -35,7 +35,9 @@ def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
     return dataset
 
 
-def mixtral_task_specific_expert_pruning_inference(global_ranking: bool = True, batch_size: int = 8):
+def mixtral_task_specific_expert_pruning_inference(
+        global_ranking: bool = True, batch_size: int = 8
+):
     model = AutoModelForCausalLM.from_pretrained(
         "mistralai/Mixtral-8x7B-v0.1", device_map="auto", torch_dtype=torch.float16
     ).eval()
