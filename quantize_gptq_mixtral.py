@@ -45,7 +45,11 @@ def mixtral_quantize_config(bits_config_str: str):
     moe_block_bit_dict = {}
     for i in range(4):
         key = f"self_attn.{['q_proj', 'k_proj', 'v_proj', 'o_proj'][i]}"
-        moe_block_bit_dict[key] = main_bits
+        if "attn" in bits_config_str:
+            attn_bits = re.search(r"attn_(\d)", bits_config_str)[1]
+            moe_block_bit_dict[key] = attn_bits
+        else:
+            moe_block_bit_dict[key] = main_bits
     for i in range(8):
         for part in ['w1', 'w2', 'w3']:
             key = f"block_sparse_moe.experts.{i}.{part}"
@@ -54,6 +58,7 @@ def mixtral_quantize_config(bits_config_str: str):
         for layer in moe_block_bit_dict:
             key = f'model.layers.{block_num}' + '.' + layer
             mixtral_bit[key] = moe_block_bit_dict[layer]
+
     # Special expert bits, e.g. "exp_l1e3_16": 16-bit for expert 3 in layer 1
     special_expert_bits = re.findall(r"exp_l(\d+)e(\d+)_(\d+)", bits_config_str)
     for layer, expert, bits in special_expert_bits:
@@ -90,6 +95,13 @@ def main():
     quantized_model_file_base_name = f'{model_name.split("/")[-1]}-gptq_w_bit_{bits_name}'
 
     mixtral_bits = mixtral_quantize_config(args.bits)
+
+    print("====== First 32 bits config items ======")
+    for i, (k, v) in enumerate(mixtral_bits.items()):
+        if i >= 32:
+            break
+        print(f"{k}: {v}")
+    print()
 
     quantize_config = BaseQuantizeConfig_mixed_precision(
         bits={k: v for k, v in mixtral_bits.items() if v != 16},  # quantize model to 4-bit
