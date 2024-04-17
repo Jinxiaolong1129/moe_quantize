@@ -47,7 +47,7 @@ def mixtral_quantize_config(bits_config_str: str):
         key = f"self_attn.{['q_proj', 'k_proj', 'v_proj', 'o_proj'][i]}"
         if "attn" in bits_config_str:
             attn_bits = re.search(r"attn_(\d)", bits_config_str)[1]
-            moe_block_bit_dict[key] = attn_bits
+            moe_block_bit_dict[key] = int(attn_bits)
         else:
             moe_block_bit_dict[key] = main_bits
     for i in range(8):
