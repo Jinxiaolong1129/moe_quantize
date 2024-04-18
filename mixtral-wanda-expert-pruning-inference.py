@@ -79,7 +79,7 @@ def mixtral_task_specific_expert_pruning_inference(
                 input_dim = getattr(module, linear).in_features
                 activation[f"{name}.{linear}"] = torch.cat([
                     act.reshape(-1, input_dim) for act in activation[f"{name}.{linear}"]
-                ], dim=0)
+                ], dim=0).cuda(7)
                 input_channel_norm[f"{name}.{linear}"] = torch.linalg.norm(activation[f"{name}.{linear}"], ord=2, dim=0)
                 del activation[f"{name}.{linear}"]
 
@@ -89,9 +89,9 @@ def mixtral_task_specific_expert_pruning_inference(
             _scores = []
             for linear in ["w1", "w2", "w3"]:
                 with torch.no_grad():
-                    wanda_score = getattr(module, linear).weight.abs().cuda(7) * input_channel_norm[f"{name}.{linear}"].cuda(7)
+                    wanda_score = getattr(module, linear).weight.abs().cuda(7) * input_channel_norm[f"{name}.{linear}"]
                 _scores.append(wanda_score.sum())
-            expert_wanda_score[name] = sum(_scores.cup().item())
+            expert_wanda_score[name] = sum(_scores).cpu().item()
 
     config = model.config
     num_experts = config.num_local_experts
