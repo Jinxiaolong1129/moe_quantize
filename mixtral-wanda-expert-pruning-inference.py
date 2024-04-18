@@ -53,7 +53,11 @@ def mixtral_task_specific_expert_pruning_inference(
             if name in activation:
                 activation[name].append(input.detach())
             else:
-                activation[name] = [input.detach()]
+                try:
+                    activation[name] = [input.detach()]
+                except AttributeError as e:
+                    print(input)
+                    raise e
 
         return hook
 
