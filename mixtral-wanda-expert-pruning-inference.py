@@ -51,13 +51,9 @@ def mixtral_task_specific_expert_pruning_inference(
     def get_activation(name):
         def hook(model, input, output):
             if name in activation:
-                activation[name].append(input.detach())
+                activation[name].append(input[0].detach())
             else:
-                try:
-                    activation[name] = [input.detach()]
-                except AttributeError as e:
-                    print(input)
-                    raise e
+                activation[name] = [input[0].detach()]
 
         return hook
 
