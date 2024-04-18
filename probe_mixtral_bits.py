@@ -53,7 +53,11 @@ def calculate_mixtral_num_experts_to_add_bits(
     moe_block_bit_dict = {}
     for i in range(4):
         key = f"self_attn.{['q_proj', 'k_proj', 'v_proj', 'o_proj'][i]}"
-        moe_block_bit_dict[key] = main_bits
+        if "attn" in bits_config_str:
+            attn_bits = re.search(r"attn_(\d)", bits_config_str)[1]
+            moe_block_bit_dict[key] = int(attn_bits)
+        else:
+            moe_block_bit_dict[key] = main_bits
     for i in range(8):
         for part in ['w1', 'w2', 'w3']:
             key = f"block_sparse_moe.experts.{i}.{part}"
