@@ -42,7 +42,7 @@ def mixtral_task_specific_expert_pruning_inference(
         "mistralai/Mixtral-8x7B-v0.1", device_map="auto", torch_dtype=torch.float16
     ).eval()
     tokenizer = AutoTokenizer.from_pretrained("mistralai/Mixtral-8x7B-v0.1")
-    dataset = get_wikitext2(tokenizer=tokenizer, seqlen=4096, nsamples=128, split="train")
+    dataset = get_wikitext2(tokenizer=tokenizer, seqlen=4096, nsamples=32, split="train")
 
     # Add hook to MixtralBLockSparseTop2MLP
     activation = {}
@@ -51,9 +51,9 @@ def mixtral_task_specific_expert_pruning_inference(
     def get_activation(name):
         def hook(model, input, output):
             if name in activation:
-                activation[name].append(input[0].detach())
+                activation[name].append(input[0].detach().cpu())
             else:
-                activation[name] = [input[0].detach()]
+                activation[name] = [input[0].detach().cpu()]
 
         return hook
 
@@ -88,7 +88,8 @@ def mixtral_task_specific_expert_pruning_inference(
         if isinstance(module, MixtralBlockSparseTop2MLP):
             _scores = []
             for linear in ["w1", "w2", "w3"]:
-                wanda_score = getattr(module, linear).weight.abs() * input_channel_norm[f"{name}.{linear}"]
+                with torch.no_grad():
+                    wanda_score = getattr(module, linear).weight.abs().cpu() * input_channel_norm[f"{name}.{linear}"]
                 _scores.append(wanda_score)
             expert_wanda_score[name] = torch.stack(_scores).mean()
 
