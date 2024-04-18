@@ -90,8 +90,10 @@ def mixtral_task_specific_expert_pruning_inference(
             for linear in ["w1", "w2", "w3"]:
                 with torch.no_grad():
                     wanda_score = getattr(module, linear).weight.abs().cuda(7) * input_channel_norm[f"{name}.{linear}"]
-                _scores.append(wanda_score.sum())
+                _scores.append(wanda_score.mean())
             expert_wanda_score[name] = sum(_scores).cpu().item()
+
+    print(expert_wanda_score)
 
     config = model.config
     num_experts = config.num_local_experts
