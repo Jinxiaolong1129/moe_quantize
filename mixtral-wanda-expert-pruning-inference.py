@@ -101,7 +101,7 @@ def mixtral_task_specific_expert_pruning_inference(
     for layer in range(num_layers):
         for expert_id in range(num_experts):
             wanda_score = expert_wanda_score[f"model.layers.{layer}.block_sparse_moe.experts.{expert_id}"]
-            expert_ranking.append((f"exp_l{layer}e{expert_id}", wanda_score.item()))
+            expert_ranking.append((f"exp_l{layer}e{expert_id}", wanda_score))
     expert_ranking.sort(key=lambda x: x[1], reverse=True)
     print([exp[0] for exp in expert_ranking])
 
