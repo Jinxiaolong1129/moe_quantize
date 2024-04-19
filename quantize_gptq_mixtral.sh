@@ -91,3 +91,15 @@ DEBUG=0 CUDA_VISIBLE_DEVICES=1 python quantize_gptq_mixtral.py \
       --model_name mistralai/Mixtral-8x7B-v0.1 \
       --bits main_2.attn_4.exp_l31e1_8.exp_l31e5_8.exp_l30e5_8.exp_l30e3_8.exp_l30e7_8.exp_l29e2_8.exp_l29e7_8.exp_l29e1_8.exp_l29e6_8.exp_l28e0_8.exp_l28e1_8.exp_l30e2_8.exp_l31e7_8.exp_l29e0_8.exp_l28e3_8.exp_l29e3_8.exp_l30e4_8.exp_l28e2_8.exp_l28e4_8.exp_l28e5_8.exp_l28e7_8.exp_l29e4_8.exp_l28e6_8.exp_l31e2_8.exp_l27e4_8.exp_l27e5_8.exp_l30e0_8.exp_l27e0_8.exp_l27e2_8.exp_l27e6_8.exp_l26e6_8.exp_l30e6_8.exp_l31e3_8.exp_l26e0_8.exp_l27e1_8.exp_l27e7_8.exp_l30e1_8.exp_l26e4_8.exp_l26e3_8.exp_l26e1_8.exp_l29e5_8.exp_l25e4_8 \
       --bits_name main_2.attn_4.wanda_avg_3bits
+
+# Attention 2 bits + Massive experts in each layer + WANDA for left (12 experts)
+DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
+      --model_name mistralai/Mixtral-8x7B-v0.1 \
+      --bits main_2.exp_l0e0_8.exp_l1e3_8.exp_l2e0_8.exp_l3e4_8.exp_l4e5_8.exp_l5e6_8.exp_l6e4_8.exp_l7e0_8.exp_l8e1_8.exp_l9e7_8.exp_l10e4_8.exp_l11e5_8.exp_l12e2_8.exp_l13e0_8.exp_l14e2_8.exp_l15e3_8.exp_l16e0_8.exp_l17e6_8.exp_l18e0_8.exp_l19e6_8.exp_l20e3_8.exp_l21e6_8.exp_l22e3_8.exp_l23e3_8.exp_l24e2_8.exp_l25e2_8.exp_l26e0_8.exp_l27e4_8.exp_l28e2_8.exp_l29e3_8.exp_l30e0_8.exp_l31e0_8.exp_l31e1_8.exp_l31e5_8.exp_l30e5_8.exp_l30e3_8.exp_l30e7_8.exp_l29e2_8.exp_l29e7_8.exp_l29e1_8.exp_l29e6_8.exp_l28e0_8.exp_l28e1_8.exp_l30e_8 \
+      --bits_name main_2.most_mass_each_layer_and_task_specific_avg_3bits
+
+# Attention 4 bits + Massive experts in each layer + WANDA for left (10 experts)
+DEBUG=0 CUDA_VISIBLE_DEVICES=1 python quantize_gptq_mixtral.py \
+      --model_name mistralai/Mixtral-8x7B-v0.1 \
+      --bits main_2.attn_4.exp_l0e0_8.exp_l1e3_8.exp_l2e0_8.exp_l3e4_8.exp_l4e5_8.exp_l5e6_8.exp_l6e4_8.exp_l7e0_8.exp_l8e1_8.exp_l9e7_8.exp_l10e4_8.exp_l11e5_8.exp_l12e2_8.exp_l13e0_8.exp_l14e2_8.exp_l15e3_8.exp_l16e0_8.exp_l17e6_8.exp_l18e0_8.exp_l19e6_8.exp_l20e3_8.exp_l21e6_8.exp_l22e3_8.exp_l23e3_8.exp_l24e2_8.exp_l25e2_8.exp_l26e0_8.exp_l27e4_8.exp_l28e2_8.exp_l29e3_8.exp_l30e0_8.exp_l31e0_8.exp_l31e1_8.exp_l31e5_8.exp_l30e5_8.exp_l30e3_8.exp_l30e7_8.exp_l29e2_8.exp_l29e7_8.exp_l29e1_8.exp_l29e6_8.exp_l28e0_8 \
+      --bits_name main_2.attn_4.most_mass_each_layer_and_task_specific_avg_3bits
