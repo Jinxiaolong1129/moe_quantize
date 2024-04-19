@@ -159,6 +159,7 @@ class AwqQuantizer:
 
             # NOTE (xioalong): AWQ algorithm
             # BUG 
+            # BUG 
             # [STEP 2]: Compute and apply scale list. # important
             module_config: List[Dict] = self.awq_model.get_layers_for_scaling(
                 self.modules[i], input_feat, self.module_kwargs

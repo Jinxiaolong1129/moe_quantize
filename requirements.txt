@@ -37,8 +37,8 @@ DataProperty==1.0.1
 datasets==2.18.0
 debugpy==1.8.1
 decorator==5.1.1
-deepspeed==0.14.0
-defusedxml==0.7.1
+# deepspeed==0.14.0
+# defusedxml==0.7.1
 dill==0.3.8
 einops==0.7.0
 evaluate==0.4.1
@@ -47,7 +47,6 @@ executing==2.0.1
 fastjsonschema==2.19.1
 filelock==3.13.1
 fire==0.6.0
-flash-attn==0.2.4
 fonttools==4.50.0
 fqdn==1.5.1
 frozenlist==1.4.1
@@ -232,3 +231,5 @@ xxhash==3.4.1
 yarl==1.9.4
 zipp==3.18.1
 zstandard==0.22.0
+flash-attn==0.2.4
+
