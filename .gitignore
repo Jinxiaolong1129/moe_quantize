@@ -173,3 +173,4 @@ autogptq_quantize_model/
 autogptq_deepseek-ai/
 hf_cache/
 save/
+data/
