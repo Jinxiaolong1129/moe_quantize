@@ -180,12 +180,14 @@ class WQLinear_GEMM(nn.Module):
             dtype=torch.int32,
             device=intweight.device,
         )
-
+        # int 4 32*128       128个4bit放进32bit数里 / (32/4)
+        # intweight.shape[1] // pack_num == qweight.shape[1]
+        # 0,1,2,3->qweight: 0
         for col in range(intweight.shape[1] // pack_num):
             if awq_linear.w_bit == 4:
                 order_map = [0, 2, 4, 6, 1, 3, 5, 7]
             elif awq_linear.w_bit == 8:
-                order_map = list(range(8))  # Order map for 8-bit quantization
+                order_map = list(range(4))  # Order map for 8-bit quantization
             elif awq_linear.w_bit == 2:
                 order_map = list(range(pack_num))  # Order map for 2-bit quantization
             else:

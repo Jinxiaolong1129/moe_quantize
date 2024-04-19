@@ -202,7 +202,7 @@ class AwqQuantizer:
         for name, linear_layer in named_linears.items():
             logger.info(f'quantize finished | {name}')
             linear_layer = linear_layer.to(get_best_device()).half()
-
+            # BUG maybe bug here
             linear_layer.weight.data, scales, zeros = self.pseudo_quantize_tensor(
                 linear_layer.weight.data
             )
