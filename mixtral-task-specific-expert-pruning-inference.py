@@ -9,8 +9,7 @@ from datasets import load_dataset
 from fire import Fire
 from torch.nn import functional as F
 from tqdm import tqdm
-from transformers import AutoModelForCausalLM
-from transformers import AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
 def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
