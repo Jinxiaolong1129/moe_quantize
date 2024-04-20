@@ -35,9 +35,7 @@ def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
     return dataset
 
 
-def mixtral_task_specific_expert_pruning_inference(
-        global_ranking: bool = True, batch_size: int = 8
-):
+def mixtral_task_specific_expert_pruning_inference(batch_size: int = 8):
     model = AutoModelForCausalLM.from_pretrained(
         "mistralai/Mixtral-8x7B-v0.1", device_map="auto", torch_dtype=torch.float16
     ).eval()
@@ -47,6 +45,8 @@ def mixtral_task_specific_expert_pruning_inference(
     # Add hook to MixtralBLockSparseTop2MLP
     activation = {}
     all_hooks = []
+
+    last_cuda_device = torch.cuda.device_count() - 1
 
     def get_activation(name):
         def hook(model, input, output):
@@ -79,7 +79,7 @@ def mixtral_task_specific_expert_pruning_inference(
                 input_dim = getattr(module, linear).in_features
                 activation[f"{name}.{linear}"] = torch.cat([
                     act.reshape(-1, input_dim) for act in activation[f"{name}.{linear}"]
-                ], dim=0).cuda(7)
+                ], dim=0).cuda(last_cuda_device)
                 input_channel_norm[f"{name}.{linear}"] = torch.linalg.norm(activation[f"{name}.{linear}"], ord=2, dim=0)
                 del activation[f"{name}.{linear}"]
 
@@ -89,7 +89,7 @@ def mixtral_task_specific_expert_pruning_inference(
             _scores = []
             for linear in ["w1", "w2", "w3"]:
                 with torch.no_grad():
-                    wanda_score = getattr(module, linear).weight.abs().cuda(7) * input_channel_norm[f"{name}.{linear}"]
+                    wanda_score = getattr(module, linear).weight.abs().cuda(last_cuda_device) * input_channel_norm[f"{name}.{linear}"]
                 _scores.append(wanda_score.mean())
             expert_wanda_score[name] = sum(_scores).cpu().item()
 
