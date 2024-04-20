@@ -1,6 +1,7 @@
 import sys
 
 sys.path.append("/home/LeiFeng/pingzhi/moe_quantize/optimum/")  # Add the path to Python's search path
+sys.path.append("/home/LeiFeng/pingzhi/moe_quantize/")
 print(sys.path)
 import re
 import torch
