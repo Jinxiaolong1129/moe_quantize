@@ -107,6 +107,9 @@ def mixtral_task_specific_expert_pruning_inference(
     expert_ranking.sort(key=lambda x: x[1], reverse=True)
     print([exp[0] for exp in expert_ranking])
 
+    # save wanda score
+    torch.save(expert_wanda_score, "expert_wanda_score.pt")
+
     # all_router_logits = torch.cat(all_router_logits, dim=1).to(torch.float32)
     # all_router_weights = F.softmax(all_router_logits, dim=-1)
     # expert_proficiency = all_router_weights.mean(dim=1)  # of shape (num_hidden_layers, num_local_experts)
