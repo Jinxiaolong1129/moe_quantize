@@ -16,5 +16,5 @@ DEBUG=0 CUDA_VISIBLE_DEVICES=0,1,2 python lm_eval_gptq.py \
 
 DEBUG=0 CUDA_VISIBLE_DEVICES=5,6,7 python lm_eval_gptq.py \
     --model_name mistralai/Mixtral-8x7B-v0.1 \
-    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_2.attn_4.most_mass_each_layer_and_wanda_avg_3bits \
+    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_2.most_mass_each_layer_and_wanda_avg_3bits \
     --is_quantized
