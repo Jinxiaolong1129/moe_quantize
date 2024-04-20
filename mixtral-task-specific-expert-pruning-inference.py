@@ -74,6 +74,8 @@ def mixtral_task_specific_expert_pruning_inference(
             expert_ranking = expert_proficiency_layer.argsort(descending=True)
             print(f"Layer {layer}:", [f"exp_l{layer}e{expert_id}" for expert_id in expert_ranking])
 
+    if not os.path.exists("results"):
+        os.makedirs("results")
     torch.save(expert_proficiency, "results/expert_task_specific_score.pt")
 
 
