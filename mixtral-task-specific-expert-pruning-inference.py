@@ -1,19 +1,16 @@
 # -*- coding: utf-8 -*-
 # @Author: pingzhili
 # @Time: 2024/4/14
-import sys
+
+import random
 
 import torch
+from datasets import load_dataset
+from fire import Fire
 from torch.nn import functional as F
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM
-
-sys.path.append("/home/LeiFeng/pingzhi/moe_quantize/optimum/")  # Add the path to Python's search path
-import random
-
 from transformers import AutoTokenizer
-from datasets import load_dataset
-from fire import Fire
 
 
 def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
