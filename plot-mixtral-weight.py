@@ -19,7 +19,7 @@ def block_wise_weight_boxplot(save_dir="./results/"):
     block_flatten_weight = []
     for block in model.model.layers:
         ffn = block.block_sparse_moe
-        ffn_weight = torch.stack(
+        ffn_weight = torch.cat(
             [exp.w1.weight.data for exp in ffn.experts] + [exp.w2.weight.data for exp in ffn.experts] + [exp.w3.weight.data for exp in ffn.experts]
         ).flatten().cpu()
         block_flatten_weight.append(ffn_weight)
