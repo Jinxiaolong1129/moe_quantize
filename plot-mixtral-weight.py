@@ -58,7 +58,7 @@ def expert_wise_weight_boxplot(save_dir="./results/"):
         plt.clf()
 
 
-def main(level: str):
+def main(level: str = "expert"):
     if level == "block":
         block_wise_weight_boxplot()
     elif level == "expert":
