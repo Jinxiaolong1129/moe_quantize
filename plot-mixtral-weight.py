@@ -13,7 +13,7 @@ plt.rcParams['font.family'] = 'Times New Roman'
 
 def block_wise_weight_boxplot(save_dir="./results/"):
     model = MixtralForCausalLM.from_pretrained(
-        "mistralai/Mixtral-8x7B-v0.1", torch_dtype=torch.bfloat16, device_map="cuda:0"
+        "mistralai/Mixtral-8x7B-v0.1", torch_dtype=torch.bfloat16, device_map="auto"
     )
 
     block_flatten_weight = []
