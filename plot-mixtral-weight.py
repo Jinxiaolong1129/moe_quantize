@@ -58,5 +58,14 @@ def expert_wise_weight_boxplot(save_dir="./results/"):
         plt.clf()
 
 
+def main(level: str):
+    if level == "block":
+        block_wise_weight_boxplot()
+    elif level == "expert":
+        expert_wise_weight_boxplot()
+    else:
+        raise ValueError(f"Invalid level: {level}")
+
+
 if __name__ == "__main__":
-    Fire(expert_wise_weight_boxplot)
+    Fire(main)
