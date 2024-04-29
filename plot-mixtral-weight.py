@@ -10,6 +10,7 @@ from transformers import MixtralForCausalLM
 
 plt.rcParams['font.family'] = 'Times New Roman'
 
+
 @torch.no_grad()
 def block_wise_weight_boxplot(save_dir="./results/"):
     model = MixtralForCausalLM.from_pretrained(
@@ -20,7 +21,9 @@ def block_wise_weight_boxplot(save_dir="./results/"):
     for block in model.model.layers:
         ffn = block.block_sparse_moe
         ffn_weight = torch.cat(
-            [exp.w1.weight.data for exp in ffn.experts] + [exp.w2.weight.data for exp in ffn.experts] + [exp.w3.weight.data for exp in ffn.experts]
+            [exp.w1.weight.data.flatten() for exp in ffn.experts] + (
+                [exp.w2.weight.data.flatten() for exp in ffn.experts]) + (
+                [exp.w3.weight.data.flatten() for exp in ffn.experts])
         ).flatten().cpu()
         block_flatten_weight.append(ffn_weight)
 
@@ -44,10 +47,9 @@ def expert_wise_weight_boxplot(save_dir="./results/"):
         expert_flatten_weight = torch.stack([
             torch.cat([exp.w1.weight.data.flatten(), exp.w2.weight.data.flatten(), exp.w3.weight.data.flatten()])
             for exp in ffn.experts
-        ])
-        # clear plot
-
-
+        ]).cpu()
+        # clean plot
+        plt.boxplot(expert_flatten_weight.abs())
 
 
 if __name__ == "__main__":
