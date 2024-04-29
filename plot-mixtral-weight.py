@@ -59,4 +59,4 @@ def expert_wise_weight_boxplot(save_dir="./results/"):
 
 
 if __name__ == "__main__":
-    Fire(block_wise_weight_boxplot)
+    Fire(expert_wise_weight_boxplot)
