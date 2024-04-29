@@ -54,7 +54,7 @@ def expert_wise_weight_boxplot(save_dir="./results/"):
         plt.yscale("log")
         plt.xlabel("Expert")
         plt.ylabel("Weight Value")
-        plt.save(expert_flatten_weight, os.path.join(save_dir, "expert_wise_weight_boxplot", f"block_{block}.png"))
+        plt.savefig(os.path.join(save_dir, "expert_wise_weight_boxplot", f"block_{block}.png"))
         plt.clf()
 
 
