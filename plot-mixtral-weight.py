@@ -49,7 +49,12 @@ def expert_wise_weight_boxplot(save_dir="./results/"):
             for exp in ffn.experts
         ]).cpu()
         # clean plot
-        plt.boxplot(expert_flatten_weight.abs())
+        plt.boxplot(expert_flatten_weight.abs(), positions=range(len(expert_flatten_weight)), showfliers=True)
+        plt.yscale("log")
+        plt.xlabel("Expert")
+        plt.ylabel("Weight Value")
+        plt.save(expert_flatten_weight, os.path.join(save_dir, "expert_wise_weight_boxplot", f"block_{block}.png"))
+        plt.clf()
 
 
 if __name__ == "__main__":
