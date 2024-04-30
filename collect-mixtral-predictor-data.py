@@ -2,6 +2,8 @@
 # @Author: pingzhili
 # @Time: 2024/4/29
 
+import random
+
 import torch
 from datasets import load_dataset
 from fire import Fire
