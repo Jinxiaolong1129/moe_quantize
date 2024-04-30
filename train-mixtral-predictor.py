@@ -10,6 +10,7 @@ from fire import Fire
 from torch import nn
 from torch.nn import functional as F
 from torch.optim import AdamW
+from tqdm import tqdm
 
 
 def train_mixtral_ffn_cosine_similarity_predictor(
@@ -54,6 +55,8 @@ def train_mixtral_ffn_cosine_similarity_predictor(
     best_val_loss = float("inf")
     early_stop_counter = 0
 
+    progress_bar = tqdm(range(num_epochs * len(train_data)), desc="Training cosine similarity predictors...")
+
     for epoch in range(num_epochs):
         for batch in train_data:
             optimizer.zero_grad()
@@ -67,6 +70,7 @@ def train_mixtral_ffn_cosine_similarity_predictor(
             loss = criterion(cos_sim_pred, cos_sim_gt)
             loss.backward()
             optimizer.step()
+            progress_bar.update()
             wandb.log({"train_loss": loss.item()})
 
         val_loss = 0
@@ -89,6 +93,7 @@ def train_mixtral_ffn_cosine_similarity_predictor(
         else:
             early_stop_counter += 1
             if early_stop_counter >= early_stop:
+                print(f"Early stopped at epoch {epoch}/{num_epochs}")
                 break
 
         torch.save(predictor.state_dict(), os.path.join(save_dir, f"epoch-{epoch}.pt"))
