@@ -18,7 +18,7 @@ def train_mixtral_ffn_cosine_similarity_predictor(
         data_dir: str = "/data/data4/pingzhi/data/ffn_input_output_pairs",
         save_dir: str = "/data/data4/pingzhi/data/checkpoints",
         learning_rate: float = 1e-4,
-        num_epochs: int = 50,
+        num_epochs: int = 100,
         hidden_dim: int = 1024,
         val_ratio: float = 0.1,
         early_stop: int = 5,
