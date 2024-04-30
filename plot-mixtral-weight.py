@@ -9,7 +9,8 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 from transformers import MixtralForCausalLM
 
-plt.rcParams['font.family'] = 'Times New Roman'
+
+# plt.rcParams['font.family'] = 'Times New Roman'
 
 
 @torch.no_grad()
@@ -43,7 +44,7 @@ def expert_wise_weight_boxplot(save_dir="./results/"):
         "mistralai/Mixtral-8x7B-v0.1", torch_dtype=torch.float16, device_map="auto"
     )
 
-    for block in tqdm(model.model.layers):
+    for block_id, block in enumerate(tqdm(model.model.layers)):
         ffn = block.block_sparse_moe
         expert_flatten_weight = torch.stack([
             torch.cat([exp.w1.weight.data.flatten(), exp.w2.weight.data.flatten(), exp.w3.weight.data.flatten()])
@@ -54,7 +55,7 @@ def expert_wise_weight_boxplot(save_dir="./results/"):
         plt.yscale("log")
         plt.xlabel("Expert")
         plt.ylabel("Weight Value")
-        plt.savefig(os.path.join(save_dir, "expert_wise_weight_boxplot", f"block_{block}.png"))
+        plt.savefig(os.path.join(save_dir, "expert_wise_weight_boxplot", f"block_{block_id}.png"))
         plt.clf()
 
 
