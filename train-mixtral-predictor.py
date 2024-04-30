@@ -1,0 +1,101 @@
+# -*- coding: utf-8 -*-
+# @Author: pingzhili
+# @Time: 2024/4/30
+import os
+import random
+
+import torch
+import wandb
+from fire import Fire
+from torch import nn
+from torch.nn import functional as F
+from torch.optim import AdamW
+
+
+def train_mixtral_ffn_cosine_similarity_predictor(
+        ffn_block_id: int,
+        data_dir: str = "/data/data4/pingzhi/data/ffn_input_output_pairs",
+        save_dir: str = "/data/data4/pingzhi/data/checkpoints",
+        learning_rate: float = 1e-4,
+        num_epochs: int = 20,
+        hidden_dim: int = 1024,
+        val_ratio: float = 0.1,
+        early_stop: int = 5,
+):
+    wandb.init(
+        project="mixtral-ffn-cosine-predictor",
+        name=f"ffn-block-{ffn_block_id}",
+    )
+
+    predictor = nn.Sequential(
+        nn.Linear(4096, hidden_dim, bias=False),
+        nn.ReLU(),
+        nn.Linear(hidden_dim, 1, bias=False),
+        nn.Tanh(),
+    )
+    predictor = predictor.cuda()
+    optimizer = AdamW(predictor.parameters(), lr=learning_rate, weight_decay=1e-2)
+    criterion = nn.MSELoss()
+
+    data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.block_sparse_moe.pt"))
+    save_dir = os.path.join(save_dir, f"ffn_block_{ffn_block_id}")
+
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    else:
+        print(f"Warning: {save_dir} already exists")
+
+    # random split
+    random.shuffle(data)
+    val_size = int(val_ratio * len(data))
+    train_data = data[val_size:]
+    val_data = data[:val_size]
+
+    best_val_loss = float("inf")
+    early_stop_counter = 0
+
+    for epoch in range(num_epochs):
+        for batch in train_data:
+            optimizer.zero_grad()
+            ffn_input, ffn_output = batch
+            ffn_input = ffn_input.squeeze().cuda()
+            ffn_output = ffn_output.squeeze().cuda()
+            with torch.no_grad():
+                cos_sim_gt = F.cosine_similarity(ffn_input, ffn_output, dim=-1)
+
+            cos_sim_pred = predictor(ffn_input)
+            loss = criterion(cos_sim_pred, cos_sim_gt)
+            loss.backward()
+            optimizer.step()
+            wandb.log({"train_loss": loss.item()})
+
+        val_loss = 0
+        for batch in val_data:
+            ffn_input, ffn_output = batch
+            ffn_input = ffn_input.squeeze().cuda()
+            ffn_output = ffn_output.squeeze().cuda()
+            with torch.no_grad():
+                cos_sim_gt = F.cosine_similarity(ffn_input, ffn_output, dim=-1)
+                cos_sim_pred = predictor(ffn_input)
+            val_loss += criterion(cos_sim_pred, cos_sim_gt).item()
+
+        val_loss /= len(val_data)
+        wandb.log({"val_loss": val_loss})
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            early_stop_counter = 0
+            torch.save(predictor.state_dict(), os.path.join(save_dir, f"best.pt"))
+        else:
+            early_stop_counter += 1
+            if early_stop_counter >= early_stop:
+                break
+
+        torch.save(predictor.state_dict(), os.path.join(save_dir, f"epoch-{epoch}.pt"))
+
+    torch.save(predictor.state_dict(), os.path.join(save_dir, f"last.pt"))
+    wandb.finish()
+
+
+if __name__ == "__main__":
+    Fire(train_mixtral_ffn_cosine_similarity_predictor)
