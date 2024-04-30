@@ -12,8 +12,8 @@ from transformers.models.mixtral.modeling_mixtral import MixtralForCausalLM, Mix
 
 @torch.no_grad()
 def collect_mixtral_predictor_data(
-        seq_len=4096,
-        num_samples=100,
+        seq_len=1024,
+        num_samples=400,
         chunk_size=100000,
         save_dir="/data/data4/pingzhi/data"
 ):
