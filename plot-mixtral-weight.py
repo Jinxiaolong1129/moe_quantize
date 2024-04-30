@@ -43,6 +43,9 @@ def expert_wise_weight_boxplot(save_dir="./results/"):
     model = MixtralForCausalLM.from_pretrained(
         "mistralai/Mixtral-8x7B-v0.1", torch_dtype=torch.float16, device_map="auto"
     )
+    save_dir = os.path.join(save_dir, "expert_wise_weight_boxplot")
+    if not os.path.isdir(save_dir):
+        os.mkdir(save_dir)
 
     for block_id, block in enumerate(tqdm(model.model.layers)):
         ffn = block.block_sparse_moe
@@ -55,7 +58,7 @@ def expert_wise_weight_boxplot(save_dir="./results/"):
         plt.yscale("log")
         plt.xlabel("Expert")
         plt.ylabel("Weight Value")
-        plt.savefig(os.path.join(save_dir, "expert_wise_weight_boxplot", f"block_{block_id}.png"))
+        plt.savefig(os.path.join(save_dir, f"block_{block_id}.png"))
         plt.clf()
 
 
