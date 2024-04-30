@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Author: pingzhili
 # @Time: 2024/4/29
-
+import os.path
 import random
 
 import torch
@@ -16,7 +16,6 @@ from transformers.models.mixtral.modeling_mixtral import MixtralForCausalLM, Mix
 def collect_mixtral_predictor_data(
         seq_len=1024,
         num_samples=400,
-        chunk_size=100000,
         save_dir="/data/data4/pingzhi/data"
 ):
     model = MixtralForCausalLM.from_pretrained(
@@ -58,16 +57,23 @@ def collect_mixtral_predictor_data(
         with torch.no_grad():
             model(**data)
 
-    chunk_size = chunk_size // seq_len
-    print(f"Total number of samples: {num_samples}")
-    print(f"Chunk size: {chunk_size}")
-    print(f"Number of chunks: {num_samples // chunk_size}")
-    for start_id in range(0, num_samples, chunk_size):
-        chunk = {}
-        for name, input_output_pair in block_ffn_input_output_pair.items():
-            chunk[name] = input_output_pair[start_id:start_id + chunk_size]
-        torch.save(chunk, f"{save_dir}/chunk_{start_id}.pt")
-        print(f"Saved chunk {start_id}/{num_samples}")
+    # chunk_size = chunk_size // seq_len
+    # print(f"Total number of samples: {num_samples}")
+    # print(f"Chunk size: {chunk_size}")
+    # print(f"Number of chunks: {num_samples // chunk_size}")
+    # for start_id in range(0, num_samples, chunk_size):
+    #     chunk = {}
+    #     for name, input_output_pair in block_ffn_input_output_pair.items():
+    #         chunk[name] = input_output_pair[start_id:start_id + chunk_size]
+    #     torch.save(chunk, f"{save_dir}/chunk_{start_id}.pt")
+    #     print(f"Saved chunk {start_id}/{num_samples}")
+    save_dir = f"{save_dir}/ffn_input_output_pairs"
+    if not os.path.isdir(save_dir):
+        os.mkdir(save_dir)
+
+    for key, pair in block_ffn_input_output_pair.items():
+        torch.save(pair, f"{save_dir}/{key}.pt")
+        print(f"Saved at {save_dir}/{key}.pt")
 
 
 if __name__ == "__main__":
