@@ -33,7 +33,7 @@ def train_mixtral_ffn_cosine_similarity_predictor(
         nn.Linear(hidden_dim, 1, bias=False),
         nn.Tanh(),
     )
-    predictor = predictor.cuda().bfloat16()
+    predictor = predictor.bfloat16().cuda()
     optimizer = AdamW(predictor.parameters(), lr=learning_rate, weight_decay=1e-2)
     criterion = nn.MSELoss()
 
