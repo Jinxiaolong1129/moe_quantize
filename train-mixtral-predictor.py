@@ -63,7 +63,7 @@ def train_mixtral_ffn_cosine_similarity_predictor(
             with torch.no_grad():
                 cos_sim_gt = F.cosine_similarity(ffn_input, ffn_output, dim=-1)
 
-            cos_sim_pred = predictor(ffn_input)
+            cos_sim_pred = predictor(ffn_input).squeeze()
             loss = criterion(cos_sim_pred, cos_sim_gt)
             loss.backward()
             optimizer.step()
@@ -76,7 +76,7 @@ def train_mixtral_ffn_cosine_similarity_predictor(
             ffn_output = ffn_output.squeeze().cuda()
             with torch.no_grad():
                 cos_sim_gt = F.cosine_similarity(ffn_input, ffn_output, dim=-1)
-                cos_sim_pred = predictor(ffn_input)
+                cos_sim_pred = predictor(ffn_input).squeeze()
             val_loss += criterion(cos_sim_pred, cos_sim_gt).item()
 
         val_loss /= len(val_data)
