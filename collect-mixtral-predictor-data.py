@@ -28,7 +28,7 @@ def collect_mixtral_predictor_data(
     def _custom_ffn_forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         input_token = hidden_states.detach().clone().cpu()
         original_output = self._original_forward(hidden_states)
-        output_token = original_output.detach().clone().cpu()
+        output_token = original_output[0].detach().clone().cpu()
         with torch.no_grad():
             block_ffn_input_output_pair[self._module_name].append((input_token, output_token))
         return original_output
