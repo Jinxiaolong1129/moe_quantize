@@ -96,7 +96,7 @@ def train_mixtral_ffn_cosine_similarity_predictor(
                 print(f"Early stopped at epoch {epoch}/{num_epochs}")
                 break
 
-        torch.save(predictor.state_dict(), os.path.join(save_dir, f"epoch-{epoch}.pt"))
+        # torch.save(predictor.state_dict(), os.path.join(save_dir, f"epoch-{epoch}.pt"))
 
     torch.save(predictor.state_dict(), os.path.join(save_dir, f"last.pt"))
     wandb.finish()
