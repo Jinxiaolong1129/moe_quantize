@@ -39,7 +39,7 @@ def collect_mixtral_predictor_data(
             block_ffn_input_output_pair[name] = []
             module._original_forward = module.forward
             module._module_name = name
-            module.forward = _custom_ffn_forward.__get__(model, type(module))
+            module.forward = _custom_ffn_forward.__get__(module, type(module))
 
     model.eval()
 
