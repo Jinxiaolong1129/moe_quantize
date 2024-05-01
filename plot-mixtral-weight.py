@@ -55,12 +55,12 @@ def expert_wise_weight_boxplot(save_dir="./results/"):
             for exp in ffn.experts
         ]).cpu()
         block_max_weight.append(expert_flatten_weight.abs().max().item())
-        # plt.boxplot(expert_flatten_weight.abs(), positions=range(len(expert_flatten_weight)), showfliers=True)
-        # plt.yscale("log")
-        # plt.xlabel("Expert")
-        # plt.ylabel("Weight Value")
-        # plt.savefig(os.path.join(save_dir, f"block_{block_id}.png"))
-        # plt.clf()
+        plt.boxplot(expert_flatten_weight.abs(), positions=range(len(expert_flatten_weight)), showfliers=True)
+        plt.yscale("log")
+        plt.xlabel("Expert")
+        plt.ylabel("Weight Value")
+        plt.savefig(os.path.join(save_dir, f"block_{block_id}.png"))
+        plt.clf()
     print(f"Max weight magnitude per block: {block_max_weight}")
 
 
