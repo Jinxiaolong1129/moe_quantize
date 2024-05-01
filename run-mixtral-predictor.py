@@ -26,7 +26,7 @@ def train_mixtral_ffn_cosine_similarity_predictor(
 ):
     wandb.init(
         project="mixtral-ffn-cosine-predictor",
-        name=f"ffn-block-{ffn_block_id}",
+        name=f"ffn-residual-block-{ffn_block_id}" if data_with_residual else f"ffn-block-{ffn_block_id}",
     )
 
     predictor = nn.Sequential(
@@ -43,7 +43,8 @@ def train_mixtral_ffn_cosine_similarity_predictor(
         data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.pt"))
     else:
         data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.block_sparse_moe.pt"))
-    save_dir = os.path.join(save_dir, f"ffn_block_{ffn_block_id}")
+    save_dir = os.path.join(save_dir, f"ffn_residual_block_{ffn_block_id}") if data_with_residual else os.path.join(
+        save_dir, f"ffn_block_{ffn_block_id}")
 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
