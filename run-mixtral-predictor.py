@@ -15,8 +15,9 @@ from tqdm import tqdm
 
 def train_mixtral_ffn_cosine_similarity_predictor(
         ffn_block_id: int,
-        data_dir: str = "/data/data4/pingzhi/data/ffn_input_output_pairs",
-        save_dir: str = "/data/data4/pingzhi/data/checkpoints",
+        data_dir: str = "/data/data7/pingzhi/data/ffn_input_output_pairs",
+        data_with_residual: bool = True,
+        save_dir: str = "/data/data8/pingzhi/data/checkpoints",
         learning_rate: float = 1e-4,
         num_epochs: int = 100,
         hidden_dim: int = 1024,
@@ -38,7 +39,10 @@ def train_mixtral_ffn_cosine_similarity_predictor(
     optimizer = AdamW(predictor.parameters(), lr=learning_rate, weight_decay=1e-2)
     criterion = nn.MSELoss()
 
-    data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.block_sparse_moe.pt"))
+    if data_with_residual:
+        data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.pt"))
+    else:
+        data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.block_sparse_moe.pt"))
     save_dir = os.path.join(save_dir, f"ffn_block_{ffn_block_id}")
 
     if not os.path.exists(save_dir):
