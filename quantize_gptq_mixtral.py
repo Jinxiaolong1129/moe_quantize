@@ -84,7 +84,7 @@ def main():
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
         level=logging.INFO,
         datefmt="%Y-%m-%d %H:%M:%S",
-        filename=f"/home/LeiFeng/pingzhi/moe_quantize/quantize_gptq_mixtral_{bits_name}.log"
+        filename=f"./quantize_gptq_mixtral_{bits_name}.log"
     )
 
     args_dict = vars(args)
