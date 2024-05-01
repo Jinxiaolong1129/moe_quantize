@@ -130,7 +130,7 @@ def eval_mixtral_ffn_cosine_similarity_predictor(
     cos_sim_pred_list = torch.cat(cos_sim_pred_list)
     average_cos_sim_pred = cos_sim_pred_list.mean().item()
 
-    print(f"[Block {ffn_block_id}] Average cosine similarity prediction: {average_cos_sim_pred}")
+    print(f"[Block {ffn_block_id}] Average predicted output-input cosine similarity: {average_cos_sim_pred}")
 
 
 if __name__ == "__main__":
