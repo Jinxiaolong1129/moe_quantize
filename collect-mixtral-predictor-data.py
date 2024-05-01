@@ -69,7 +69,8 @@ def collect_mixtral_ffn_predictor_train_data(
 def collect_mixtral_predictor_test_data(
         seq_len=4096,
         num_samples=128,
-        save_dir="/data/data5/pingzhi/data/ffn_input_output_pairs/testset"
+        save_dir="/data/data8/pingzhi/data/ffn_input_output_pairs/testset",
+        dataset_name: str = "wikitext"
 ):
     model = MixtralForCausalLM.from_pretrained(
         "mistralai/Mixtral-8x7B-v0.1", torch_dtype=torch.bfloat16, device_map="auto"
@@ -94,7 +95,12 @@ def collect_mixtral_predictor_test_data(
 
     model.eval()
 
-    data = load_dataset("wikitext", "wikitext-2-raw-v1", split="train")
+    if dataset_name == "wikitext":
+        data = load_dataset("wikitext", "wikitext-2-raw-v1", split="train")
+    elif dataset_name == "minipile":
+        data = load_dataset("JeanKaddour/minipile", split="train")
+    else:
+        raise ValueError("dataset_name should be 'wikitext' or 'minipile'")
     # this is GPTQ calibration data
     text = "".join([" \n" if s == "" else s for s in data["text"][:1000]])
     encoded_text = tokenizer(text, return_tensors="pt")
@@ -303,4 +309,4 @@ def collect_mixtral_ffn_with_residual_predictor_test_data(
 
 
 if __name__ == "__main__":
-    Fire(collect_mixtral_ffn_with_residual_predictor_test_data)
+    Fire(collect_mixtral_predictor_test_data)
