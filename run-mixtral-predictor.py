@@ -109,9 +109,9 @@ def train_mixtral_ffn_cosine_similarity_predictor(
 
 def eval_mixtral_ffn_cosine_similarity_predictor(
         ffn_block_id: int,
-        data_dir: str = "/data/data9/pingzhi/data/ffn_input_output_pairs/testset",
-        data_with_residual: bool = True,
-        checkpoint_dir: str = "/data/data8/pingzhi/data/checkpoints",
+        data_dir: str = "/data/data8/pingzhi/data/ffn_input_output_pairs/testset",
+        data_with_residual: bool = False,
+        checkpoint_dir: str = "/data/data4/pingzhi/data/checkpoints",
         hidden_dim: int = 1024,
 ):
     predictor = nn.Sequential(
