@@ -109,8 +109,9 @@ def train_mixtral_ffn_cosine_similarity_predictor(
 
 def eval_mixtral_ffn_cosine_similarity_predictor(
         ffn_block_id: int,
-        data_dir: str = "/data/data5/pingzhi/data/ffn_input_output_pairs/testset",
-        checkpoint_dir: str = "/data/data4/pingzhi/data/checkpoints",
+        data_dir: str = "/data/data9/pingzhi/data/ffn_input_output_pairs/testset",
+        data_with_residual: bool = True,
+        checkpoint_dir: str = "/data/data8/pingzhi/data/checkpoints",
         hidden_dim: int = 1024,
 ):
     predictor = nn.Sequential(
@@ -119,11 +120,15 @@ def eval_mixtral_ffn_cosine_similarity_predictor(
         nn.Linear(hidden_dim, 1, bias=False),
         nn.Tanh(),
     )
-    predictor.load_state_dict(torch.load(os.path.join(checkpoint_dir, f"ffn_block_{ffn_block_id}/best.pt")))
+    checkpoint_name = f"ffn_residual_block_{ffn_block_id}" if data_with_residual else f"ffn_block_{ffn_block_id}"
+    predictor.load_state_dict(torch.load(os.path.join(checkpoint_dir, f"{checkpoint_name}/best.pt")))
     predictor = predictor.bfloat16().cuda()
     predictor.eval()
 
-    data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.block_sparse_moe.pt"))
+    if data_with_residual:
+        data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.pt"))
+    else:
+        data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.block_sparse_moe.pt"))
     cos_sim_pred_list = []
 
     for batch in tqdm(data, desc="Evaluating cosine similarity predictor..."):
@@ -149,4 +154,4 @@ def main_eval():
 
 
 if __name__ == "__main__":
-    Fire(train_mixtral_ffn_cosine_similarity_predictor)
+    Fire(main_eval)
