@@ -102,5 +102,36 @@ def train_mixtral_ffn_cosine_similarity_predictor(
     wandb.finish()
 
 
+def eval_mixtral_ffn_cosine_similarity_predictor(
+        ffn_block_id: int,
+        data_dir: str = "/data/data5/pingzhi/data/ffn_input_output_pairs/testset",
+        checkpoint_dir: str = "/data/data4/pingzhi/data/checkpoints",
+        hidden_dim: int = 1024,
+):
+    predictor = nn.Sequential(
+        nn.Linear(4096, hidden_dim, bias=False),
+        nn.ReLU(),
+        nn.Linear(hidden_dim, 1, bias=False),
+        nn.Tanh(),
+    )
+    predictor.load_state_dict(torch.load(os.path.join(checkpoint_dir, f"ffn_block_{ffn_block_id}/best.pt")))
+    predictor = predictor.bfloat16().cuda()
+    predictor.eval()
+
+    data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.block_sparse_moe.pt"))
+    cos_sim_pred_list = []
+
+    for batch in tqdm(data, desc="Evaluating cosine similarity predictor..."):
+        ffn_input, _ = batch
+        ffn_input = ffn_input.squeeze().cuda()
+        with torch.no_grad():
+            cos_sim_pred = predictor(ffn_input).squeeze()
+        cos_sim_pred_list.append(cos_sim_pred)
+    cos_sim_pred_list = torch.cat(cos_sim_pred_list)
+    average_cos_sim_pred = cos_sim_pred_list.mean().item()
+
+    print(f"[Block {ffn_block_id}] Average cosine similarity prediction: {average_cos_sim_pred}")
+
+
 if __name__ == "__main__":
     Fire(train_mixtral_ffn_cosine_similarity_predictor)
