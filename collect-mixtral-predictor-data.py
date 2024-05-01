@@ -68,7 +68,7 @@ def collect_mixtral_predictor_train_data(
 def collect_mixtral_predictor_test_data(
         seq_len=4096,
         num_samples=128,
-        save_dir="/data/data4/pingzhi/data/ffn_input_output_pairs"
+        save_dir="/data/data5/pingzhi/data/ffn_input_output_pairs"
 ):
     model = MixtralForCausalLM.from_pretrained(
         "mistralai/Mixtral-8x7B-v0.1", torch_dtype=torch.bfloat16, device_map="auto"
