@@ -121,4 +121,4 @@ def collect_mixtral_predictor_test_data(
 
 
 if __name__ == "__main__":
-    Fire(collect_mixtral_predictor_train_data)
+    Fire(collect_mixtral_predictor_test_data)
