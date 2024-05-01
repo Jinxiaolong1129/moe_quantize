@@ -11,10 +11,10 @@ export PYTHONPATH=/home/LeiFeng/pingzhi/moe_quantize/optimum/:$PYTHONPATH:/home/
 #done
 DEBUG=0 CUDA_VISIBLE_DEVICES=0,1,2 python lm_eval_gptq.py \
     --model_name mistralai/Mixtral-8x7B-v0.1 \
-    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_2.attn_4.each_layer_top4 \
+    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_2.attn_4.top16_cos_sim_layer_avg_3bits \
     --is_quantized
 
 DEBUG=0 CUDA_VISIBLE_DEVICES=3,4,5 python lm_eval_gptq.py \
     --model_name mistralai/Mixtral-8x7B-v0.1 \
-    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_2.attn_4.mass_token_avg_3bits \
+    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_2.attn_4.bottom16_cos_sim_layer_avg_3bits \
     --is_quantized

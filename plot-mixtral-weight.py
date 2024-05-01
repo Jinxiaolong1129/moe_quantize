@@ -47,19 +47,21 @@ def expert_wise_weight_boxplot(save_dir="./results/"):
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
 
+    block_max_weight = []
     for block_id, block in enumerate(tqdm(model.model.layers)):
         ffn = block.block_sparse_moe
         expert_flatten_weight = torch.stack([
             torch.cat([exp.w1.weight.data.flatten(), exp.w2.weight.data.flatten(), exp.w3.weight.data.flatten()])
             for exp in ffn.experts
         ]).cpu()
-        # clean plot
-        plt.boxplot(expert_flatten_weight.abs(), positions=range(len(expert_flatten_weight)), showfliers=True)
-        plt.yscale("log")
-        plt.xlabel("Expert")
-        plt.ylabel("Weight Value")
-        plt.savefig(os.path.join(save_dir, f"block_{block_id}.png"))
-        plt.clf()
+        block_max_weight.append(expert_flatten_weight.abs().max().item())
+        # plt.boxplot(expert_flatten_weight.abs(), positions=range(len(expert_flatten_weight)), showfliers=True)
+        # plt.yscale("log")
+        # plt.xlabel("Expert")
+        # plt.ylabel("Weight Value")
+        # plt.savefig(os.path.join(save_dir, f"block_{block_id}.png"))
+        # plt.clf()
+    print(f"Max weight magnitude per block: {block_max_weight}")
 
 
 def main(level: str = "expert"):
