@@ -134,4 +134,4 @@ def eval_mixtral_ffn_cosine_similarity_predictor(
 
 
 if __name__ == "__main__":
-    Fire(train_mixtral_ffn_cosine_similarity_predictor)
+    Fire(eval_mixtral_ffn_cosine_similarity_predictor)
