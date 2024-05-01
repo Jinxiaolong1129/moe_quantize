@@ -132,6 +132,16 @@ def eval_mixtral_ffn_cosine_similarity_predictor(
 
     print(f"[Block {ffn_block_id}] Average predicted output-input cosine similarity: {average_cos_sim_pred}")
 
+    return average_cos_sim_pred
+
+
+def main_eval():
+    cos_sims = []
+    for i in range(32):
+        avg_sim = eval_mixtral_ffn_cosine_similarity_predictor(ffn_block_id=i)
+        cos_sims.append(avg_sim)
+    print(cos_sims)
+
 
 if __name__ == "__main__":
-    Fire(eval_mixtral_ffn_cosine_similarity_predictor)
+    Fire(main_eval)
