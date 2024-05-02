@@ -26,6 +26,8 @@ def _get_profiling_dataset(tokenizer, seq_len, num_samples):
         attention_mask = torch.ones_like(inp)
         dataset.append({"input_ids": inp, "attention_mask": attention_mask})
 
+    return dataset
+
 
 @torch.no_grad()
 def collect_mixtral_block_output(
