@@ -69,6 +69,7 @@ def mixtral_quantize_config(bits_config_str: str):
     # Special layer bits, e.g. "layer_16_4": 4-bit for layer 16
     special_layer_bits = re.findall(r"layer_(\d+)_(\d+)", bits_config_str)
     for layer, bits in special_layer_bits:
+        print(f"Applying {bits}-bit to layer {layer}")
         for key in mixtral_bit:
             if f"model.layers.{int(layer)}.block_sparse_moe." in key:
                 mixtral_bit[key] = int(bits)
