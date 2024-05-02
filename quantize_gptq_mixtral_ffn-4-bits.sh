@@ -80,8 +80,14 @@ DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
       --bits main_2.attn_4.layer_31_4.layer_30_4.layer_12_4.layer_10_4.layer_13_4.layer_8_4.layer_29_4.layer_11_4.layer_7_4.layer_9_4.layer_14_4.layer_15_4.layer_28_4.layer_6_4.layer_16_4.layer_5_4.layer_1_4 \
       --bits_name main_2.attn_4.top16_cos_sim_layer_and_layer1
 
-# top 12 layers cos sim (96 experts)
+# cos-sim top 12 layers cos sim (96 experts)
 DEBUG=0 CUDA_VISIBLE_DEVICES=1 python quantize_gptq_mixtral.py \
       --model_name mistralai/Mixtral-8x7B-v0.1 \
       --bits main_2.attn_4.layer_31_4.layer_30_4.layer_12_4.layer_10_4.layer_13_4.layer_8_4.layer_29_4.layer_11_4.layer_7_4.layer_9_4.layer_14_4.layer_15_4 \
       --bits_name main_2.attn_4.top12_cos_sim_layer
+
+# cos-sim top 6 layers + all gate_proj
+DEBUG=0 CUDA_VISIBLE_DEVICES=1 python quantize_gptq_mixtral.py \
+      --model_name mistralai/Mixtral-8x7B-v0.1 \
+      --bits main_2.attn_4.layer_31_4.layer_30_4.layer_12_4.layer_10_4.layer_13_4.layer_8_4.keyword__gate_proj__4 \
+      --bits_name main_2.attn_4.top6_cos_sim_and_gate_proj_avg_3bits

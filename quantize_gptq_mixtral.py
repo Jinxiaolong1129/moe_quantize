@@ -74,6 +74,14 @@ def mixtral_quantize_config(bits_config_str: str):
             if f"model.layers.{int(layer)}.block_sparse_moe." in key:
                 mixtral_bit[key] = int(bits)
 
+    # Special module name keywords, e.g. "keyword__gate_proj__4": 4-bit for all gate_proj modules
+    special_module_bits = re.findall(r"keyword__(\w+)__(\d+)", bits_config_str)
+    for module_key, bits in special_module_bits:
+        print(f"Applying {bits}-bit to module {module_key}")
+        for key in mixtral_bit:
+            if module_key in key:
+                mixtral_bit[key] = int(bits)
+
     return mixtral_bit
 
 
