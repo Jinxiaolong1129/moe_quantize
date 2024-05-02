@@ -8,6 +8,7 @@ from fire import Fire
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 from transformers import MixtralForCausalLM
+# from transformers.models.mistral.modeling_mistral import MistralMLP, MistralForCausalLM
 
 
 # plt.rcParams['font.family'] = 'Times New Roman'
