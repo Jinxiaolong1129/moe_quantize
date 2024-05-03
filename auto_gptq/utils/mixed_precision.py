@@ -228,6 +228,38 @@ def moe_quantize_config(args):
                 key = f'model.layers.{block_num}' + '.' + layer
                 deeepseek_bit[key] = moe_block_bit_dict[layer]
         return deeepseek_bit
+
+    if args.bits == 'all_3':
+        moe_block_bit_dict = {}
+
+        for i in range(4):
+            key = f"self_attn.{['q_proj', 'k_proj', 'v_proj', 'o_proj'][i]}"
+            moe_block_bit_dict[key] = 3
+
+        for i in range(64):
+            for part in ['gate_proj', 'up_proj', 'down_proj']:
+                key = f"mlp.experts.{i}.{part}"
+                moe_block_bit_dict[key] = 3
+
+        for part in ['gate_proj', 'up_proj', 'down_proj']:
+            key = f"mlp.shared_experts.{part}"
+            moe_block_bit_dict[key] = 3
+
+        deeepseek_bit = {
+            'model.layers.0.self_attn.q_proj': 3, 
+            'model.layers.0.self_attn.k_proj': 3,
+            'model.layers.0.self_attn.v_proj': 3,
+            'model.layers.0.self_attn.o_proj': 3,
+            'model.layers.0.mlp.gate_proj': 3,
+            'model.layers.0.mlp.up_proj': 3,
+            'model.layers.0.mlp.down_proj': 3
+        }
+
+        for block_num in range(1, 28):
+            for layer in moe_block_bit_dict:
+                key = f'model.layers.{block_num}' + '.' + layer
+                deeepseek_bit[key] = moe_block_bit_dict[layer]
+        return deeepseek_bit
     
     if args.bits == 'all_8':
         moe_block_bit_dict = {}
@@ -454,7 +486,7 @@ def moe_quantize_config(args):
                 deeepseek_bit[key] = moe_block_bit_dict[layer]
         return deeepseek_bit
 
-
+    args.bits = 'moe.shared_28'
 
     distribution_matrix = torch.load('/home/LeiFeng/xiaolong/moe_quantize/save/routing-count.pt')
     sorted_expert_indices_by_block = get_top_expert(distribution_matrix)
@@ -1026,6 +1058,114 @@ def moe_quantize_config(args):
     
     raise ValueError("Invalid bits")
 
+
+def moe_quantize_config_layer(args):
+    # moe.shared_8.top25_4.other_2+other_block.4+startlayer_5
+    pattern = r"^moe\.shared_8\.top25_4\.other_2\+other_block\.4\+"
+
+    if bool(re.match(pattern, args.bits)):
+        
+        
+        moe_block_bit_dict = {}
+
+        for i in range(4):
+            key = f"self_attn.{['q_proj', 'k_proj', 'v_proj', 'o_proj'][i]}"
+            moe_block_bit_dict[key] = 4
+
+        for i in range(64):
+            for part in ['gate_proj', 'up_proj', 'down_proj']:
+                key = f"mlp.experts.{i}.{part}"
+                moe_block_bit_dict[key] = 2
+
+        for part in ['gate_proj', 'up_proj', 'down_proj']:
+            key = f"mlp.shared_experts.{part}"
+            moe_block_bit_dict[key] = 8
+
+        deeepseek_bit = {
+            'model.layers.0.self_attn.q_proj': 4, 
+            'model.layers.0.self_attn.k_proj': 4,
+            'model.layers.0.self_attn.v_proj': 4,
+            'model.layers.0.self_attn.o_proj': 4,
+            'model.layers.0.mlp.gate_proj': 4,
+            'model.layers.0.mlp.up_proj': 4,
+            'model.layers.0.mlp.down_proj': 4
+        }
+
+        pattern = r"(startlayer|endlayer)_(\d+)"
+
+        match = re.search(pattern, args.bits)
+        num_layer = int(match.group(2)) if match else None
+
+        if 'startlayer' in args.bits:
+            for block_num in range(1, num_layer+1):
+                for layer in moe_block_bit_dict:
+                    top25 = sorted_expert_indices_by_block[block_num][0:25]
+                    if 'mlp.experts' in layer:
+                        moe_index = layer.split('.')[2]
+                        if int(moe_index) in top25:
+                            key = f'model.layers.{block_num}' + '.' + layer
+                            deeepseek_bit[key] = 2
+                        else:
+                            key = f'model.layers.{block_num}' + '.' + layer
+                            deeepseek_bit[key] = 2
+                    else:
+                        key = f'model.layers.{block_num}' + '.' + layer
+                        deeepseek_bit[key] = moe_block_bit_dict[layer]
+                        
+                        
+            for block_num in range(num_layer+1, 28):
+                for layer in moe_block_bit_dict:
+                    top25 = sorted_expert_indices_by_block[block_num][0:25]
+                    if 'mlp.experts' in layer:
+                        moe_index = layer.split('.')[2]
+                        if int(moe_index) in top25:
+                            key = f'model.layers.{block_num}' + '.' + layer
+                            deeepseek_bit[key] = 4
+                        else:
+                            key = f'model.layers.{block_num}' + '.' + layer
+                            deeepseek_bit[key] = 2
+                    else:
+                        key = f'model.layers.{block_num}' + '.' + layer
+                        deeepseek_bit[key] = moe_block_bit_dict[layer]
+
+        elif 'endlayer' in args.bits:
+            blocks = list(range(1, 28))
+            for block_num in blocks[:-num_layer]:
+                for layer in moe_block_bit_dict:
+                    top25 = sorted_expert_indices_by_block[block_num][0:25]
+                    if 'mlp.experts' in layer:
+                        moe_index = layer.split('.')[2]
+                        if int(moe_index) in top25:
+                            key = f'model.layers.{block_num}' + '.' + layer
+                            deeepseek_bit[key] = 4
+                        else:
+                            key = f'model.layers.{block_num}' + '.' + layer
+                            deeepseek_bit[key] = 2
+                    else:
+                        key = f'model.layers.{block_num}' + '.' + layer
+                        deeepseek_bit[key] = moe_block_bit_dict[layer]
+                        
+                        
+            for block_num in blocks[-num_layer:]:
+                for layer in moe_block_bit_dict:
+                    top25 = sorted_expert_indices_by_block[block_num][0:25]
+                    if 'mlp.experts' in layer:
+                        moe_index = layer.split('.')[2]
+                        if int(moe_index) in top25:
+                            key = f'model.layers.{block_num}' + '.' + layer
+                            deeepseek_bit[key] = 2
+                        else:
+                            key = f'model.layers.{block_num}' + '.' + layer
+                            deeepseek_bit[key] = 2
+                    else:
+                        key = f'model.layers.{block_num}' + '.' + layer
+                        deeepseek_bit[key] = moe_block_bit_dict[layer]
+
+        return deeepseek_bit
+
+
+    
+    
 
 if __name__ == "__main__":
     # Create ArgumentParser object

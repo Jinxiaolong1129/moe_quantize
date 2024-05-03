@@ -1,0 +1,13 @@
+Bits,MoE Average Bit,Self-Attention Average Bit,Average Bit
+moe.shared_8.top25_4.other_2+other_block.4+endlayer_10,2.6588103254769924,4.0,2.7039578009843153
+moe.shared_8.top25_4.other_2+other_block.4+endlayer_20,2.378226711560045,4.0,2.432819265625385
+moe.shared_8.top25_4.other_2+other_block.4+startlayer_27,2.1818181818181817,4.0,2.2430222908741344
+moe.shared_8.top25_4.other_2+other_block.4+endlayer_25,2.237934904601571,4.0,2.29724999794592
+moe.shared_8.top25_4.other_2+other_block.4+startlayer_10,2.6588103254769924,4.0,2.7039578009843153
+moe.shared_8.top25_4.other_2+other_block.4+endlayer_5,2.7991021324354657,4.0,2.83952706866378
+moe.shared_8.top25_4.other_2+other_block.4+endlayer_27,2.1818181818181817,4.0,2.2430222908741344
+moe.shared_8.top25_4.other_2+other_block.4+startlayer_15,2.5185185185185186,4.0,2.56838853330485
+moe.shared_8.top25_4.other_2+other_block.4+startlayer_20,2.378226711560045,4.0,2.432819265625385
+moe.shared_8.top25_4.other_2+other_block.4+startlayer_5,2.7991021324354657,4.0,2.83952706866378
+moe.shared_8.top25_4.other_2+other_block.4+startlayer_25,2.237934904601571,4.0,2.29724999794592
+moe.shared_8.top25_4.other_2+other_block.4+endlayer_15,2.5185185185185186,4.0,2.56838853330485

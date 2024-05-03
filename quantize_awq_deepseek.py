@@ -6,9 +6,6 @@ from argparse import ArgumentParser
 import logging
 
 
-
-
-
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--bits", type=int, default=4)

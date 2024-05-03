@@ -1,19 +1,32 @@
-from bitstring import Bits
+from datasets import load_dataset
 
-def to_2bit_binary(num):
-    # Ensure the number is within the valid range for 2-bit representation
-    if num < 0 or num > 3:
-        raise ValueError("Number must be between 0 and 3 for 2-bit representation")
-    
-    # Convert the number to a 2-bit binary string
-    binary_str = Bits(uint=num, length=2).bin
-    
-    return binary_str
+custom_cache_dir = "data"
+dataset = load_dataset("mit-han-lab/pile-val-backup", cache_dir=custom_cache_dir)
 
-# Example usage:
-number = 51238
-binary_representation = to_2bit_binary(number)
-print(f"{number} in 2-bit binary: {binary_representation}")
+
+
+
+
+
+
+
+
+# from bitstring import Bits
+
+# def to_2bit_binary(num):
+#     # Ensure the number is within the valid range for 2-bit representation
+#     if num < 0 or num > 3:
+#         raise ValueError("Number must be between 0 and 3 for 2-bit representation")
+    
+#     # Convert the number to a 2-bit binary string
+#     binary_str = Bits(uint=num, length=2).bin
+    
+#     return binary_str
+
+# # Example usage:
+# number = 51238
+# binary_representation = to_2bit_binary(number)
+# print(f"{number} in 2-bit binary: {binary_representation}")
 
 
 # qweight

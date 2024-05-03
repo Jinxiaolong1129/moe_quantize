@@ -11,7 +11,7 @@ import logging
 from datasets import load_dataset
 
 from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig, AutoGPTQForCausalLM_mixed_precision, BaseQuantizeConfig_mixed_precision
-from auto_gptq import moe_quantize_config
+from auto_gptq import moe_quantize_config, moe_quantize_config_layer
 import logging
 import csv
 import time
@@ -59,6 +59,10 @@ def average_bit():
     parser = ArgumentParser()
     parser.add_argument("--bits", type=str, default='moe.all_mlp.2+other_block.4')
     parser.add_argument("--model_name", type=str, default='deepseek-ai/deepseek-moe-16b-base')
+        
+    parser.add_argument("--nsamples", type=int, default=512)
+    parser.add_argument("--seqlen", type=int, default=512)  
+    parser.add_argument("--group_size", type=int, default=128)    
     
     args = parser.parse_args()
     args_dict = vars(args)
@@ -76,20 +80,21 @@ def average_bit():
         except IndexError:
             return None
 
-    eval_bits = []
+    # eval_bits = []
 
-    for filename in os.listdir('autogptq_eval_result/deepseek-moe-16b-base'):
-        if filename.startswith("eval_result_deepseek-moe-16b-base-gptq_w_bit_") and filename.endswith("_pile"):
-            bits = extract_bits(filename)
-            eval_bits.append(bits)
+    # for filename in os.listdir('autogptq_eval_result/deepseek-moe-16b-base'):
+    #     if filename.startswith("eval_result_deepseek-moe-16b-base-gptq_w_bit_") and filename.endswith("_pile"):
+    #         bits = extract_bits(filename)
+    #         eval_bits.append(bits)
 
+    eval_bits = [args.bits]
     print(f"len(eval_bits): {len(eval_bits)}")
     
     
     for bits in eval_bits:
         args.bits = bits
         
-        deeepseek_bit = moe_quantize_config(args)
+        deeepseek_bit = moe_quantize_config_layer(args)
         
         total_bits_moe = 0
         total_params_moe = 0
@@ -152,19 +157,19 @@ def average_bit():
         # Add the data to the list
         log_data.append(data)
     
-    fieldnames = ["Bits", "MoE Average Bit", "Self-Attention Average Bit", "Average Bit"]
+    # fieldnames = ["Bits", "MoE Average Bit", "Self-Attention Average Bit", "Average Bit"]
 
-    # Open a CSV file to write the data
-    with open('deepseek_bits_data.csv', 'w', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    # # Open a CSV file to write the data
+    # with open('deepseek_bits_data.csv', 'w', newline='') as csvfile:
+    #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-        # Write the header
-        writer.writeheader()
+    #     # Write the header
+    #     writer.writeheader()
         
-        # Write the log data
-        writer.writerows(log_data)
+    #     # Write the log data
+    #     writer.writerows(log_data)
 
-    print("Log data has been saved to log_data.csv.")
+    # print("Log data has been saved to log_data.csv.")
     
     
 
@@ -202,8 +207,9 @@ def main():
     
     logging.info(f"Quantized model will be saved to {quant_path}")
     logging.info(f"Quantized model file base name: {quantized_model_file_base_name}")
-    
-    deeepseek_bit = moe_quantize_config(args)
+    # BUG
+    # deeepseek_bit = moe_quantize_config(args)
+    deeepseek_bit = moe_quantize_config_layer(args)
     logging.info(f"Quantization config: {deeepseek_bit}")
     print(f"Quantization config:\n {deeepseek_bit}")
     
