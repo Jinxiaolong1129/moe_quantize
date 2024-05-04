@@ -105,7 +105,7 @@ DEBUG=0 CUDA_VISIBLE_DEVICES=1 python quantize_gptq_mixtral.py \
       --bits_name main_2.attn_4.top6_cos_sim_and_all_w3
 
 # layerset 1: selected manually from the channel-max plot + all w2
-DEBUG=0 CUDA_VISIBLE_DEVICES=1 python quantize_gptq_mixtral.py \
+DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
       --model_name mistralai/Mixtral-8x7B-v0.1 \
       --bits main_2.attn_4.layer_0_4.layer_13_4.layer_16_4.layer_18_4.layer_20_4.layer_23_4.layer_26_4.keyword__w2__4 \
       --bits_name main_2.attn_4.layerset_1_and_all_w2
