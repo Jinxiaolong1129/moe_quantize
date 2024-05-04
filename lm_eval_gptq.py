@@ -104,7 +104,7 @@ if __name__ == "__main__":
 
     print(">>>>> Results <<<<<")
     if args.is_quantized:
-        print(f"Quantization on {args.model_name}")
+        print(f"Quantization on {args.model_name} from {args.quant_model_path}")
     else:
         print(f"No quantization on {args.model_name}")
     print(f"Metrics: {all_metrics}")

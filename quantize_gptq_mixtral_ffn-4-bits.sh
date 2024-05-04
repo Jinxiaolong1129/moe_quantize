@@ -86,8 +86,26 @@ DEBUG=0 CUDA_VISIBLE_DEVICES=1 python quantize_gptq_mixtral.py \
       --bits main_2.attn_4.layer_31_4.layer_30_4.layer_12_4.layer_10_4.layer_13_4.layer_8_4.layer_29_4.layer_11_4.layer_7_4.layer_9_4.layer_14_4.layer_15_4 \
       --bits_name main_2.attn_4.top12_cos_sim_layer
 
-# cos-sim top 6 layers + all gate_proj
+# cos-sim top 6 layers + all w2
+DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
+      --model_name mistralai/Mixtral-8x7B-v0.1 \
+      --bits main_2.attn_4.layer_31_4.layer_30_4.layer_12_4.layer_10_4.layer_13_4.layer_8_4.keyword__w2__4 \
+      --bits_name main_2.attn_4.top6_cos_sim_and_all_w2
+
+# cos-sim top 6 layers + all w1
+DEBUG=0 CUDA_VISIBLE_DEVICES=7 python quantize_gptq_mixtral.py \
+      --model_name mistralai/Mixtral-8x7B-v0.1 \
+      --bits main_2.attn_4.layer_31_4.layer_30_4.layer_12_4.layer_10_4.layer_13_4.layer_8_4.keyword__w1__4 \
+      --bits_name main_2.attn_4.top6_cos_sim_and_all_w1
+
+# cos-sim top 6 layers + all w3
 DEBUG=0 CUDA_VISIBLE_DEVICES=1 python quantize_gptq_mixtral.py \
       --model_name mistralai/Mixtral-8x7B-v0.1 \
-      --bits main_2.attn_4.layer_31_4.layer_30_4.layer_12_4.layer_10_4.layer_13_4.layer_8_4.keyword__gate_proj__4 \
-      --bits_name main_2.attn_4.top6_cos_sim_and_gate_proj_avg_3bits
+      --bits main_2.attn_4.layer_31_4.layer_30_4.layer_12_4.layer_10_4.layer_13_4.layer_8_4.keyword__w3__4 \
+      --bits_name main_2.attn_4.top6_cos_sim_and_all_w3
+
+# layerset 1: selected manually from the channel-max plot + all w2
+DEBUG=0 CUDA_VISIBLE_DEVICES=1 python quantize_gptq_mixtral.py \
+      --model_name mistralai/Mixtral-8x7B-v0.1 \
+      --bits main_2.attn_4.layer_0_4.layer_13_4.layer_16_4.layer_18_4.layer_20_4.layer_23_4.layer_26_4.keyword__w2__4 \
+      --bits_name main_2.attn_4.layerset_1_and_all_w2
