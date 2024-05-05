@@ -9,17 +9,12 @@ export PYTHONPATH=/home/LeiFeng/pingzhi/moe_quantize/optimum/:$PYTHONPATH:/home/
 #    --bits $bits \
 #    --is_quantized
 #done
-DEBUG=0 CUDA_VISIBLE_DEVICES=0,1,2 python lm_eval_gptq.py \
+DEBUG=0 CUDA_VISIBLE_DEVICES=0,1,3 python lm_eval_gptq.py \
     --model_name mistralai/Mixtral-8x7B-v0.1 \
-    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_2.attn_4.top6_cos_sim_and_all_w3 \
+    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_2.attn_4.layerset_3_and_all_w2 \
     --is_quantized
 
-DEBUG=0 CUDA_VISIBLE_DEVICES=3,4,5 python lm_eval_gptq.py \
+DEBUG=0 CUDA_VISIBLE_DEVICES=4,5,6 python lm_eval_gptq.py \
     --model_name mistralai/Mixtral-8x7B-v0.1 \
-    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_2.attn_4.top6_cos_sim_and_all_w2 \
-    --is_quantized
-
-DEBUG=0 CUDA_VISIBLE_DEVICES=5,6,7 python lm_eval_gptq.py \
-    --model_name mistralai/Mixtral-8x7B-v0.1 \
-    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_2.attn_4.top6_cos_sim_and_all_w1 \
+    --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_2.attn_4.layerset_2_and_all_w2 \
     --is_quantized
