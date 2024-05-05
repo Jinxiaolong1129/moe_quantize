@@ -1,19 +1,16 @@
-import sys
-
 # sys.path.append("/home/LeiFeng/pingzhi/moe_quantize/optimum/")  # Add the path to Python's search path
 # print(sys.path)
 
 import argparse
-import os
 import json
-
-from lm_eval import evaluator
-from lm_eval.models.huggingface import HFLM
-from lm_eval.tasks import initialize_tasks
+import os
 
 from transformers import AutoTokenizer
 
 from auto_gptq import AutoGPTQForCausalLM_mixed_precision
+from lm_eval import evaluator
+from lm_eval.models.huggingface import HFLM
+from lm_eval.tasks import initialize_tasks
 
 LM_EVAL_TASK_KWARGS_DICT = {
     "winogrande": {"task": "winogrande", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
@@ -48,6 +45,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Whether to use disable exllama kernel",
     )
+    parser.add_argument(
+        "--proxy",
+        action="store_true",
+        help="Whether to skip MMLU",
+    )
     args = parser.parse_args()
 
     if args.is_quantized:
@@ -77,6 +79,9 @@ if __name__ == "__main__":
     if os.path.exists(save_file_path):
         with open(save_file_path, 'r') as file:
             all_metrics = json.load(file)
+
+    if args.proxy:
+        LM_EVAL_TASK_KWARGS_DICT.pop("mmlu")
 
     for task_kwargs in LM_EVAL_TASK_KWARGS_DICT.values():
         print(f"Evaluating task: {task_kwargs['task']}")
