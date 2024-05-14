@@ -14,7 +14,7 @@ from lm_eval.tasks import initialize_tasks
 
 LM_EVAL_TASK_KWARGS_DICT = {
     "winogrande": {"task": "winogrande", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    "copa": {"task": "copa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
+    # "copa": {"task": "copa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
     "openbookqa": {"task": "openbookqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
     "hellaswag": {"task": "hellaswag", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
     # "lambada_openai": {"task": "lambada_openai", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
@@ -82,6 +82,7 @@ if __name__ == "__main__":
 
     if args.proxy:
         LM_EVAL_TASK_KWARGS_DICT.pop("mmlu")
+        print("Skip MMLU for proxy benchmark as it is too large.")
 
     for task_kwargs in LM_EVAL_TASK_KWARGS_DICT.values():
         print(f"Evaluating task: {task_kwargs['task']}")
