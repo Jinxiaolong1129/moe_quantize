@@ -138,3 +138,19 @@ DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
       --model_name mistralai/Mixtral-8x7B-v0.1 \
       --bits main_2.attn_4.layer_0_4.layer_7_4.layer_8_4.layer_9_4.layer_10_4.layer_12_4.layer_13_4.layer_16_4.layer_18_4.layer_20_4.layer_23_4.layer_26_4.layer_30_4.layer_31_4.keyword__w2__4 \
       --bits_name main_2.attn_4.layerset_5_and_all_w2
+
+# all w1/w2/w3
+DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
+      --model_name mistralai/Mixtral-8x7B-v0.1 \
+      --bits main_2.attn_4.keyword__w1__4 \
+      --bits_name main_2.attn_4.all_w1
+
+DEBUG=0 CUDA_VISIBLE_DEVICES=3 python quantize_gptq_mixtral.py \
+      --model_name mistralai/Mixtral-8x7B-v0.1 \
+      --bits main_2.attn_4.keyword__w2__4 \
+      --bits_name main_2.attn_4.all_w2
+
+DEBUG=0 CUDA_VISIBLE_DEVICES=2 python quantize_gptq_mixtral.py \
+      --model_name mistralai/Mixtral-8x7B-v0.1 \
+      --bits main_2.attn_4.keyword__w3__4 \
+      --bits_name main_2.attn_4.all_w3

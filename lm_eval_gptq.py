@@ -113,4 +113,6 @@ if __name__ == "__main__":
         print(f"Quantization on {args.model_name} from {args.quant_model_path}")
     else:
         print(f"No quantization on {args.model_name}")
+    average = sum(v for v in all_metrics.values()) / len(all_metrics)
+    all_metrics["average"] = average
     print(f"Metrics: {all_metrics}")
