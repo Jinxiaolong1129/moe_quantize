@@ -154,3 +154,8 @@ DEBUG=0 CUDA_VISIBLE_DEVICES=2 python quantize_gptq_mixtral.py \
       --model_name mistralai/Mixtral-8x7B-v0.1 \
       --bits main_2.attn_4.keyword__w3__4 \
       --bits_name main_2.attn_4.all_w3
+
+DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
+      --model_name mistralai/Mixtral-8x7B-v0.1 \
+      --bits main_4.attn_3 \
+      --bits_name main_4.attn_3
