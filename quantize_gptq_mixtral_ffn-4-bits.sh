@@ -181,6 +181,7 @@ DEBUG=0 CUDA_VISIBLE_DEVICES=3 python quantize_gptq_mixtral.py \
       --bits main_2.attn_4.exp_l0e4_4.exp_l0e7_4.exp_l1e4_4.exp_l1e0_4.exp_l2e6_4.exp_l2e7_4.exp_l3e5_4.exp_l3e2_4.exp_l4e0_4.exp_l4e5_4.exp_l5e2_4.exp_l5e5_4.exp_l6e5_4.exp_l6e0_4.exp_l7e3_4.exp_l7e7_4.exp_l8e5_4.exp_l8e3_4.exp_l9e2_4.exp_l9e1_4.exp_l10e2_4.exp_l10e6_4.exp_l11e4_4.exp_l11e2_4.exp_l12e3_4.exp_l12e1_4.exp_l13e4_4.exp_l13e6_4.exp_l14e0_4.exp_l14e6_4.exp_l15e0_4.exp_l15e4_4.exp_l16e7_4.exp_l16e1_4.exp_l17e6_4.exp_l17e2_4.exp_l18e0_4.exp_l18e2_4.exp_l19e0_4.exp_l19e5_4.exp_l20e6_4.exp_l20e7_4.exp_l21e3_4.exp_l21e4_4.exp_l22e2_4.exp_l22e6_4.exp_l23e0_4.exp_l23e1_4.exp_l24e4_4.exp_l24e1_4.exp_l25e1_4.exp_l25e0_4.exp_l26e1_4.exp_l26e6_4.exp_l27e5_4.exp_l27e6_4.exp_l28e2_4.exp_l28e4_4.exp_l29e2_4.exp_l29e5_4.exp_l30e7_4.exp_l30e0_4.exp_l31e1_4.exp_l31e2_4 \
       --bits_name main_2.attn_4.random2_per_layer_seed44
 
+# 2.30 bits
 DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
       --model_name mistralai/Mixtral-8x7B-v0.1 \
       --bits main_2.attn_4.layer_0_4.layer_1_4.layer_2_4.layer_3_4 \
@@ -190,3 +191,13 @@ DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
       --model_name mistralai/Mixtral-8x7B-v0.1 \
       --bits main_2.attn_4.layer_28_4.layer_29_4.layer_30_4.layer_31_4 \
       --bits_name main_2.attn_4.last4_blocks
+
+DEBUG=0 CUDA_VISIBLE_DEVICES=3 python quantize_gptq_mixtral.py \
+      --model_name mistralai/Mixtral-8x7B-v0.1 \
+      --bits main_2.attn_4.layer_0_4.layer_1_4.layer_2_4.layer_3_4.layer_4_4.layer_5_4.layer_6_4.layer_7_4 \
+      --bits_name main_2.attn_4.first8_blocks
+
+DEBUG=0 CUDA_VISIBLE_DEVICES=3 python quantize_gptq_mixtral.py \
+      --model_name mistralai/Mixtral-8x7B-v0.1 \
+      --bits main_2.attn_4.layer_24_4.layer_25_4.layer_26_4.layer_27_4.layer_28_4.layer_29_4.layer_30_4.layer_31_4 \
+      --bits_name main_2.attn_4.last8_blocks
