@@ -1,12 +1,14 @@
 DEBUG=0 CUDA_VISIBLE_DEVICES=0,1,2 python lm_eval_gptq.py \
     --model_name mistralai/Mixtral-8x7B-v0.1 \
     --quant_model_path autogptq_mistralai/Mixtral-8x7B-v0.1-gptq_w_bit_main_2.attn_4.top4_cos_sim \
-    --is_quantized
+    --is_quantized &
 
-DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
+DEBUG=0 CUDA_VISIBLE_DEVICES=6 python quantize_gptq_mixtral.py \
       --model_name mistralai/Mixtral-8x7B-v0.1 \
-      --bits main_2.attn_2.layer_6_4.layer_13_4.layer_18_4.layer_24_4 \
-      --bits_name main_2.attn_4.random_4_layers_seed42
+      --bits main_2.attn_4.layer_6_4.layer_13_4.layer_18_4.layer_24_4 \
+      --bits_name main_2.attn_4.random_4_layers_seed42 &
+
+wait
 
 DEBUG=0 CUDA_VISIBLE_DEVICES=0,1,2 python lm_eval_gptq.py \
     --model_name mistralai/Mixtral-8x7B-v0.1 \
@@ -15,7 +17,7 @@ DEBUG=0 CUDA_VISIBLE_DEVICES=0,1,2 python lm_eval_gptq.py \
 
 DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
       --model_name mistralai/Mixtral-8x7B-v0.1 \
-      --bits main_2.attn_2.layer_4_4.layer_23_4.layer_7_4.layer_5_4 \
+      --bits main_2.attn_4.layer_4_4.layer_23_4.layer_7_4.layer_5_4 \
       --bits_name main_2.attn_4.random_4_layers_seed43
 
 DEBUG=0 CUDA_VISIBLE_DEVICES=0,1,2 python lm_eval_gptq.py \
@@ -25,7 +27,7 @@ DEBUG=0 CUDA_VISIBLE_DEVICES=0,1,2 python lm_eval_gptq.py \
 
 DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
       --model_name mistralai/Mixtral-8x7B-v0.1 \
-      --bits main_2.attn_2.layer_20_4.layer_15_4.layer_9_4.layer_19_4 \
+      --bits main_2.attn_4.layer_20_4.layer_15_4.layer_9_4.layer_19_4 \
       --bits_name main_2.attn_4.random_4_layers_seed44
 
 DEBUG=0 CUDA_VISIBLE_DEVICES=0,1,2 python lm_eval_gptq.py \
