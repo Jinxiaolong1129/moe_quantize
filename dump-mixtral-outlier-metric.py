@@ -3,11 +3,10 @@
 # @Time: 2024/5/21
 import os.path
 import random
-from tqdm import  tqdm
+from tqdm import tqdm
 import torch
 from fire import Fire
 from transformers.models.mixtral.modeling_mixtral import MixtralForCausalLM
-
 
 
 def dump_mixtral_linear_weight_outlier_metric(
@@ -19,7 +18,7 @@ def dump_mixtral_linear_weight_outlier_metric(
     name_to_score = {}
     for name, module in tqdm(model.named_modules()):
         if isinstance(module, torch.nn.Linear):
-            weight = module.weight
+            weight = module.weight.data
             with torch.no_grad():
                 abs_weight = weight.abs()
                 score = abs_weight.max(dim=0).values / abs_weight.mean(dim=0).values
