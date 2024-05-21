@@ -21,7 +21,7 @@ def dump_mixtral_linear_weight_outlier_metric(
             weight = module.weight.data
             with torch.no_grad():
                 abs_weight = weight.abs()
-                score = abs_weight.max(dim=0).values / abs_weight.mean(dim=0).values
+                score = abs_weight.max(dim=0).values / abs_weight.mean(dim=0)
                 score = score.max().item()
                 name_to_score[name] = score
 
