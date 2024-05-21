@@ -92,6 +92,7 @@ def main():
     parser.add_argument("--nsamples", type=int, default=512)
     parser.add_argument("--group_size", type=int, default=128)
     parser.add_argument("--bits_name", type=str, default=None)
+    parser.add_argument("--bits_dict_overwrite", type=str, default=None)
 
     args = parser.parse_args()
 
@@ -112,6 +113,11 @@ def main():
     quantized_model_file_base_name = f'{model_name.split("/")[-1]}-gptq_w_bit_{bits_name}'
 
     mixtral_bits = mixtral_quantize_config(args.bits)
+
+    if args.bits_dict_overwrite is not None:
+        overwrite_bits = torch.load(args.bits_dict_overwrite)
+        print(f"Overwrite bits from {args.bits_dict_overwrite}")
+        mixtral_bits.update(overwrite_bits)
 
     print("====== First 32 bits config items ======")
     for i, (k, v) in enumerate(mixtral_bits.items()):
