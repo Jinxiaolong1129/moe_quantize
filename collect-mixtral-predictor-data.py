@@ -312,7 +312,7 @@ def collect_mixtral_ffn_with_residual_predictor_test_data(
 def collect_mixtral_ffn_with_residual_cosine_similarity(
         seq_len=1024,
         num_samples=400,
-        save_dir="/data/data7/pingzhi/data/ffn_input_output_cosine_similarity"
+        save_dir="results/ffn_input_output_cosine_similarity"
 ):
     model = MixtralForCausalLM.from_pretrained(
         "mistralai/Mixtral-8x7B-v0.1", torch_dtype=torch.bfloat16, device_map="auto"
