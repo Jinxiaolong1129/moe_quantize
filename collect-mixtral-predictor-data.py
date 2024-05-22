@@ -353,7 +353,7 @@ def collect_mixtral_ffn_with_residual_cosine_similarity(
         hidden_states = residual + hidden_states
         output_token = hidden_states.detach().clone().cpu()  # added
         with torch.no_grad():
-            block_ffn_input_output_pair[self._module_name].append(
+            block_ffn_input_output_pair_cos_sim[self._module_name].append(
                 torch.nn.functional.cosine_similarity(input_token, output_token, dim=-1)
             )  # added
 
@@ -370,10 +370,10 @@ def collect_mixtral_ffn_with_residual_cosine_similarity(
 
         return outputs
 
-    block_ffn_input_output_pair = {}
+    block_ffn_input_output_pair_cos_sim = {}
     for name, module in model.named_modules():
         if isinstance(module, MixtralDecoderLayer):
-            block_ffn_input_output_pair[name] = []
+            block_ffn_input_output_pair_cos_sim[name] = []
             module._module_name = name
             module.forward = _custom_decoder_forward.__get__(module, type(module))
 
@@ -397,9 +397,7 @@ def collect_mixtral_ffn_with_residual_cosine_similarity(
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
 
-    for key, pairs in block_ffn_input_output_pair.items():
-        torch.save(pairs, f"{save_dir}/{key}.pt")
-        print(f"Saved at {save_dir}/{key}.pt")
+    torch.save(block_ffn_input_output_pair_cos_sim, f"cosine_similarity.pt")
 
 
 if __name__ == "__main__":
