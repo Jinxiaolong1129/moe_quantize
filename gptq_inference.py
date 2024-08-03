@@ -1,10 +1,10 @@
 import sys
-sys.path.append("/home/LeiFeng/pingzhi/moe_quantize/optimum/")  # Add the path to Python's search path
+sys.path.append("/data2/pzli/moe_quantize/optimum/")  # Add the path to Python's search path
 print(sys.path)
 
 
 import os
-os.environ['HF_HOME'] = '/home/LeiFeng/pingzhi/moe_quantize/hf_cache'
+os.environ['HF_HOME'] = '/data2/pzli/moe_quantize/hf_cache'
 os.makedirs(os.environ['HF_HOME'], exist_ok=True)
 
 

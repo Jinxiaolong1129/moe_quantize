@@ -4,7 +4,13 @@
 import argparse
 import json
 import os
+import sys
 
+sys.path.append("/data2/pzli/moe_quantize/optimum/")  # Add the path to Python's search path
+print(sys.path)
+
+os.environ['HF_HOME'] = '/data2/pzli/moe_quantize/hf_cache'
+os.makedirs(os.environ['HF_HOME'], exist_ok=True)
 from transformers import AutoTokenizer
 
 from auto_gptq import AutoGPTQForCausalLM_mixed_precision
