@@ -1775,10 +1775,9 @@ class BaseGPTQForCausalLM_mixed_precision(nn.Module, PushToHubMixin):
                 subset = {n: full[n] for n in names if n in full}
                 gptq = {}
                 for name in subset:
-                    # print(f'{self.layers_block_name}.{i}.{name}')
-                    # print(self.quantize_config.bits)
+                    print(f'{self.layers_block_name}.{i}.{name}')
+                    print(self.quantize_config.bits)
                     layer_bits = self.quantize_config.bits[f'{self.layers_block_name}.{i}.{name}']
-                    print(self.quantize_config.bits.keys())
                     gptq[name] = GPTQ(subset[name])
                     gptq[name].quantizer.configure(
                         layer_bits,
