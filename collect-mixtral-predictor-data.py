@@ -397,7 +397,7 @@ def collect_mixtral_ffn_with_residual_cosine_similarity(
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
 
-    torch.save(block_ffn_input_output_pair_cos_sim, f"cosine_similarity.pt")
+    torch.save(block_ffn_input_output_pair_cos_sim, f"{save_dir}/cosine_similarity.pt")
 
 
 if __name__ == "__main__":
