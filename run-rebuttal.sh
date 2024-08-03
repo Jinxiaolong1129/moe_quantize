@@ -1,7 +1,6 @@
 DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
       --model_name mistralai/Mixtral-8x7B-v0.1 \
       --bits main_16 \
-      --bits_dict_overwrite results/top_0.25_linear_weight.pt \
       --bits_name main_16
 
 DEBUG=0 CUDA_VISIBLE_DEVICES=0,1,2 python lm_eval_gptq.py \
