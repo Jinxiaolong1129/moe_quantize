@@ -92,7 +92,7 @@ if __name__ == "__main__":
     ) if args.is_quantized else f"{args.model_name}-fp16/eval_result.json"
 
     if not args.is_quantized:
-        os.mkdir(f"{args.model_name}-fp16")
+        os.makedirs(f"{args.model_name}-fp16")
 
     all_metrics = {}
     if os.path.exists(save_file_path):
