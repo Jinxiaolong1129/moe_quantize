@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
     save_file_path = os.path.join(
         f"{args.quant_model_path.split('/')[0]}", f"eval_result_{args.quant_model_path.split('/')[-1]}.json"
-    ) if args.isis_quantized else f"{args.model_name}-fp16/eval_result.json"
+    ) if args.is_quantized else f"{args.model_name}-fp16/eval_result.json"
 
     all_metrics = {}
     if os.path.exists(save_file_path):
