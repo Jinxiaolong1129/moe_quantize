@@ -11,7 +11,7 @@ print(sys.path)
 os.environ['HF_TOKEN'] = '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'
 os.environ['HF_HOME'] = '/data2/pzli/moe_quantize/hf_cache'
 os.makedirs(os.environ['HF_HOME'], exist_ok=True)
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from auto_gptq import AutoGPTQForCausalLM_mixed_precision
 from lm_eval import evaluator
@@ -58,15 +58,13 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name, use_fast=args.use_fast_tokenizer)
+    if not tokenizer.pad_token_id:
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+
     if args.is_quantized:
         quantized_model_file_base_name = args.quant_model_path.split("/")[-1]
-
-        os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-        tokenizer = AutoTokenizer.from_pretrained(args.model_name, use_fast=args.use_fast_tokenizer)
-        if not tokenizer.pad_token_id:
-            tokenizer.pad_token_id = tokenizer.eos_token_id
-
         model = AutoGPTQForCausalLM_mixed_precision.from_quantized(
             args.quant_model_path,
             low_cpu_mem_usage=True,
@@ -77,6 +75,15 @@ if __name__ == "__main__":
             inject_fused_mlp=False,
             inject_fused_attention=False,
             # disable_exllama=args.disable_exllama,
+        )
+    else:
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model_name,
+            low_cpu_mem_usage=True,
+            device_map="auto",
+            use_safetensors=True,
+            torch_dtype=torch.float16,
+            trust_remote_code=True
         )
 
     save_file_path = os.path.join(f"{args.quant_model_path.split('/')[0]}",
