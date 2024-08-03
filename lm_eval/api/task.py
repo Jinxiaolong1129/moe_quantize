@@ -228,6 +228,7 @@ class Task(abc.ABC):
             data_dir=data_dir,
             cache_dir=cache_dir,
             download_mode=download_mode,
+            trust_remote_code=True
         )
 
     @property
@@ -711,6 +712,8 @@ class ConfigurableTask(Task):
                     )
 
     def download(self, dataset_kwargs=None) -> None:
+        dataset_kwargs = {} if dataset_kwargs is None else dataset_kwargs
+        dataset_kwargs["trust_remote_code"] = True
         self.dataset = datasets.load_dataset(
             path=self.DATASET_PATH,
             name=self.DATASET_NAME,
