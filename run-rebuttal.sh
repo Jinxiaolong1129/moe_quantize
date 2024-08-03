@@ -1,4 +1,4 @@
-export PYTHONPATH=/data2/pzli/moe_quantize/optimum/onnxruntime/:/data2/pzli/moe_quantize/optimum/:/data2/pzli/moe_quantize/auto_gptq/:$PYTHONPATH
+#export PYTHONPATH=/data2/pzli/moe_quantize/optimum/onnxruntime/:/data2/pzli/moe_quantize/optimum/:/data2/pzli/moe_quantize/auto_gptq/:$PYTHONPATH
 
 #DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
 #      --model_name mistralai/Mixtral-8x7B-v0.1 \

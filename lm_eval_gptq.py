@@ -1,3 +1,4 @@
+# import sys
 # sys.path.append("/home/LeiFeng/pingzhi/moe_quantize/optimum/")  # Add the path to Python's search path
 # print(sys.path)
 import argparse
@@ -7,7 +8,6 @@ import sys
 
 import torch
 
-sys.path.append("/data2/pzli/moe_quantize/optimum/")  # Add the path to Python's search path
 print(sys.path)
 os.environ['HF_TOKEN'] = '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'
 os.environ['HF_HOME'] = '/data2/pzli/moe_quantize/hf_cache'
