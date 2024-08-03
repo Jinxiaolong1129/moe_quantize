@@ -1,10 +1,11 @@
 # sys.path.append("/home/LeiFeng/pingzhi/moe_quantize/optimum/")  # Add the path to Python's search path
 # print(sys.path)
-
 import argparse
 import json
 import os
 import sys
+
+import torch
 
 sys.path.append("/data2/pzli/moe_quantize/optimum/")  # Add the path to Python's search path
 print(sys.path)
