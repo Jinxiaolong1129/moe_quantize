@@ -4,8 +4,16 @@ transformers>=4.36.2
 accelerate
 attrdict
 tqdm
-
+evaluate
 deepspeed
 datasets
 tensorboardX
 peft
+scikit-learn
+word2number
+more_itertools
+tqdm-multiprocess
+sqlitedict
+rouge-score
+numexpr
+zstandard
