@@ -40,7 +40,7 @@ def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
 def mixtral_quantize_config(bits_config_str: str):
     mixtral_bit = dict()
     # The main weight bits
-    main_bits = re.search(r"main_(\d)", bits_config_str)
+    main_bits = re.search(r"main_(\d+)", bits_config_str)
     if main_bits is None:
         raise ValueError(f"Invalid bits config string: {bits_config_str}")
     main_bits = int(main_bits.group(1))
@@ -48,7 +48,7 @@ def mixtral_quantize_config(bits_config_str: str):
     for i in range(4):
         key = f"self_attn.{['q_proj', 'k_proj', 'v_proj', 'o_proj'][i]}"
         if "attn" in bits_config_str:
-            attn_bits = re.search(r"attn_(\d)", bits_config_str)[1]
+            attn_bits = re.search(r"attn_(\d+)", bits_config_str)[1]
             moe_block_bit_dict[key] = int(attn_bits)
         else:
             moe_block_bit_dict[key] = main_bits
