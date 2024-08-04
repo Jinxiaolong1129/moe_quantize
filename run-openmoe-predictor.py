@@ -121,7 +121,9 @@ def eval_openmoe_ffn_cosine_similarity_predictor(
     predictor = predictor.bfloat16().cuda()
     predictor.eval()
 
-    data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.mlp.pt"))
+    data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.pt")) if "residual" in data_dir else (
+        torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.mlp.pt"))
+    )
     cos_sim_pred_list = []
 
     for batch in tqdm(data, desc="Evaluating cosine similarity predictor..."):
