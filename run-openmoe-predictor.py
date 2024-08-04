@@ -16,7 +16,7 @@ from tqdm import tqdm
 def train_openmoe_ffn_cosine_similarity_predictor(
         ffn_block_id: int,
         data_dir: str = "/data2/pzli/qmoe_data/openmoe_ffn_input_output_pairs",
-        data_with_residual: bool = False,
+        data_with_residual: bool = True,
         save_dir: str = "/data2/pzli/qmoe_data/openmoe_checkpoints",
         learning_rate: float = 1e-4,
         num_epochs: int = 100,
@@ -110,7 +110,7 @@ def train_openmoe_ffn_cosine_similarity_predictor(
 def eval_openmoe_ffn_cosine_similarity_predictor(
         ffn_block_id: int,
         data_dir: str = "/data2/pzli/qmoe_data/openmoe_ffn_input_output_pairs/testset",
-        data_with_residual: bool = False,
+        data_with_residual: bool = True,
         checkpoint_dir: str = "/data2/pzli/qmoe_data/openmoe_checkpoints",
         hidden_dim: int = 512,
 ):
