@@ -145,4 +145,4 @@ def main_eval():
 
 
 if __name__ == "__main__":
-    Fire(main_eval)
+    Fire(train_openmoe_ffn_cosine_similarity_predictor)
