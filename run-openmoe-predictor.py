@@ -107,11 +107,11 @@ def train_openmoe_ffn_cosine_similarity_predictor(
     wandb.finish()
 
 
-def eval_mixtral_ffn_cosine_similarity_predictor(
+def eval_openmoe_ffn_cosine_similarity_predictor(
         ffn_block_id: int,
-        data_dir: str = "/data/data8/pingzhi/data/ffn_input_output_pairs/testset",
+        data_dir: str = "/data2/pzli/qmoe_data/openmoe_ffn_input_output_pairs/testset",
         data_with_residual: bool = False,
-        checkpoint_dir: str = "/data/data4/pingzhi/data/checkpoints",
+        checkpoint_dir: str = "/data2/pzli/qmoe_data/openmoe_checkpoints",
         hidden_dim: int = 1024,
 ):
     predictor = nn.Sequential(
@@ -147,8 +147,8 @@ def eval_mixtral_ffn_cosine_similarity_predictor(
 
 def main_eval():
     cos_sims = []
-    for i in range(32):
-        avg_sim = eval_mixtral_ffn_cosine_similarity_predictor(ffn_block_id=i)
+    for i in [5,11,17,23]:
+        avg_sim = eval_openmoe_ffn_cosine_similarity_predictor(ffn_block_id=i)
         cos_sims.append(avg_sim)
     print(cos_sims)
 
