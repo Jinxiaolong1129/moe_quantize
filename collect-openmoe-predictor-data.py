@@ -9,9 +9,8 @@ from colossalai.moe.layers import SparseMLP
 from datasets import load_dataset
 from fire import Fire
 from tqdm import tqdm
-from transformers import AutoTokenizer
 
-from openmoe.modeling_openmoe import OpenMoeForCausalLM
+from openmoe import OpenMoeForCausalLM, OpenMoeTokenizer
 
 
 @torch.no_grad()
@@ -23,7 +22,7 @@ def collect_openmoe_ffn_predictor_train_data(
     model = OpenMoeForCausalLM.from_pretrained(
         "OrionZheng/openmoe-8b", torch_dtype=torch.bfloat16, device_map="auto"
     )
-    tokenizer = AutoTokenizer.from_pretrained("OrionZheng/openmoe-8b")
+    tokenizer = OpenMoeTokenizer.from_pretrained("OrionZheng/openmoe-8b")
 
     block_ffn_input_output_pair = {}
 
