@@ -10,7 +10,7 @@ sys.path.append("/data2/pzli/moe_quantize/optimum/")  # Add the path to Python's
 print(sys.path)
 os.environ['HF_TOKEN'] = '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'
 
-os.environ['HF_HOME'] = '/data2/pzli/moe_quantize/hf_cache'
+os.environ['HF_HOME'] = '/data2/pzli/hf_cache'
 os.makedirs(os.environ['HF_HOME'], exist_ok=True)
 from transformers import AutoTokenizer
 from datasets import load_dataset
