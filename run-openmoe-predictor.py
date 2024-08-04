@@ -20,7 +20,7 @@ def train_openmoe_ffn_cosine_similarity_predictor(
         save_dir: str = "/data2/pzli/qmoe_data/openmoe_checkpoints",
         learning_rate: float = 1e-4,
         num_epochs: int = 100,
-        hidden_dim: int = 1024,
+        hidden_dim: int = 512,
         val_ratio: float = 0.1,
         early_stop: int = 5,
 ):
@@ -30,7 +30,7 @@ def train_openmoe_ffn_cosine_similarity_predictor(
     )
 
     predictor = nn.Sequential(
-        nn.Linear(4096, hidden_dim, bias=False),
+        nn.Linear(2048, hidden_dim, bias=False),
         nn.ReLU(),
         nn.Linear(hidden_dim, 1, bias=False),
         nn.Tanh(),
