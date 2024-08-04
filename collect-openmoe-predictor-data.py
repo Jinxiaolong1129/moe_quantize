@@ -317,4 +317,4 @@ def collect_openmoe_ffn_with_residual_predictor_test_data(
 
 
 if __name__ == "__main__":
-    Fire(collect_openmoe_ffn_with_residual_predictor_train_data)
+    Fire(collect_openmoe_ffn_with_residual_predictor_test_data)

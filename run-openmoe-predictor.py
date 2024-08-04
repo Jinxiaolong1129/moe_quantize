@@ -15,9 +15,8 @@ from tqdm import tqdm
 
 def train_openmoe_ffn_cosine_similarity_predictor(
         ffn_block_id: int,
-        data_dir: str = "/data2/pzli/qmoe_data/openmoe_ffn_input_output_pairs",
-        data_with_residual: bool = True,
-        save_dir: str = "/data2/pzli/qmoe_data/openmoe_checkpoints",
+        data_dir: str = "/data2/pzli/qmoe_data/openmoe_ffn_input_output_pairs_with_residual",
+        save_dir: str = "/data2/pzli/qmoe_data/openmoe_with_residual_checkpoints",
         learning_rate: float = 1e-4,
         num_epochs: int = 100,
         hidden_dim: int = 512,
@@ -26,7 +25,7 @@ def train_openmoe_ffn_cosine_similarity_predictor(
 ):
     wandb.init(
         project="openmoe-ffn-cosine-predictor",
-        name=f"ffn-residual-block-{ffn_block_id}" if data_with_residual else f"ffn-block-{ffn_block_id}",
+        name=f"ffn-block-{ffn_block_id}",
     )
 
     predictor = nn.Sequential(
@@ -39,12 +38,8 @@ def train_openmoe_ffn_cosine_similarity_predictor(
     optimizer = AdamW(predictor.parameters(), lr=learning_rate, weight_decay=1e-2)
     criterion = nn.MSELoss()
 
-    if data_with_residual:
-        data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.pt"))
-    else:
-        data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.mlp.pt"))
-    save_dir = os.path.join(save_dir, f"ffn_residual_block_{ffn_block_id}") if data_with_residual else os.path.join(
-        save_dir, f"ffn_block_{ffn_block_id}")
+    data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.mlp.pt"))
+    save_dir = os.path.join(save_dir, f"ffn_block_{ffn_block_id}")
 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -109,9 +104,8 @@ def train_openmoe_ffn_cosine_similarity_predictor(
 
 def eval_openmoe_ffn_cosine_similarity_predictor(
         ffn_block_id: int,
-        data_dir: str = "/data2/pzli/qmoe_data/openmoe_ffn_input_output_pairs/testset",
-        data_with_residual: bool = True,
-        checkpoint_dir: str = "/data2/pzli/qmoe_data/openmoe_checkpoints",
+        data_dir: str = "/data2/pzli/qmoe_data/openmoe_ffn_input_output_pairs_with_residual/testset",
+        checkpoint_dir: str = "/data2/pzli/qmoe_data/openmoe_with_residual_checkpoints",
         hidden_dim: int = 512,
 ):
     predictor = nn.Sequential(
@@ -120,15 +114,12 @@ def eval_openmoe_ffn_cosine_similarity_predictor(
         nn.Linear(hidden_dim, 1, bias=False),
         nn.Tanh(),
     )
-    checkpoint_name = f"ffn_residual_block_{ffn_block_id}" if data_with_residual else f"ffn_block_{ffn_block_id}"
+    checkpoint_name = f"ffn_block_{ffn_block_id}"
     predictor.load_state_dict(torch.load(os.path.join(checkpoint_dir, f"{checkpoint_name}/best.pt")))
     predictor = predictor.bfloat16().cuda()
     predictor.eval()
 
-    if data_with_residual:
-        data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.pt"))
-    else:
-        data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.mlp.pt"))
+    data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.mlp.pt"))
     cos_sim_pred_list = []
 
     for batch in tqdm(data, desc="Evaluating cosine similarity predictor..."):
