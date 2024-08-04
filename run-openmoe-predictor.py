@@ -112,10 +112,10 @@ def eval_openmoe_ffn_cosine_similarity_predictor(
         data_dir: str = "/data2/pzli/qmoe_data/openmoe_ffn_input_output_pairs/testset",
         data_with_residual: bool = False,
         checkpoint_dir: str = "/data2/pzli/qmoe_data/openmoe_checkpoints",
-        hidden_dim: int = 1024,
+        hidden_dim: int = 512,
 ):
     predictor = nn.Sequential(
-        nn.Linear(4096, hidden_dim, bias=False),
+        nn.Linear(2048, hidden_dim, bias=False),
         nn.ReLU(),
         nn.Linear(hidden_dim, 1, bias=False),
         nn.Tanh(),
