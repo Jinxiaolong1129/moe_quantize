@@ -38,7 +38,9 @@ def train_openmoe_ffn_cosine_similarity_predictor(
     optimizer = AdamW(predictor.parameters(), lr=learning_rate, weight_decay=1e-2)
     criterion = nn.MSELoss()
 
-    data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.mlp.pt"))
+    data = torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.pt")) if "residual" in data_dir else (
+        torch.load(os.path.join(data_dir, f"model.layers.{ffn_block_id}.mlp.pt"))
+    )
     save_dir = os.path.join(save_dir, f"ffn_block_{ffn_block_id}")
 
     if not os.path.exists(save_dir):
