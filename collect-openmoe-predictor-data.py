@@ -255,7 +255,7 @@ def collect_openmoe_ffn_with_residual_predictor_test_data(
             output_attentions=output_attentions,
             use_cache=use_cache,
         )
-        hidden_states = residual + hidden_states
+        hidden_states = residual.to(hidden_states.device) + hidden_states
 
         # Fully Connected
         input_token = hidden_states.detach().clone().cpu()  # added
