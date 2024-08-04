@@ -68,7 +68,7 @@ def collect_openmoe_ffn_predictor_train_data(
 
 @torch.no_grad()
 def collect_openmoe_predictor_test_data(
-        seq_len=4096,
+        seq_len=1024,
         num_samples=128,
         save_dir="/data2/pzli/qmoe_data/openmoe_ffn_input_output_pairs/testset",
         dataset_name: str = "wikitext"
