@@ -147,7 +147,7 @@ def eval_openmoe_ffn_cosine_similarity_predictor(
 
 def main_eval():
     cos_sims = []
-    for i in [5,11,17,23]:
+    for i in [5, 11, 17, 23]:
         avg_sim = eval_openmoe_ffn_cosine_similarity_predictor(ffn_block_id=i)
         cos_sims.append(avg_sim)
     print(cos_sims)
