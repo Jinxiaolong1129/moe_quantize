@@ -51,8 +51,8 @@ def get_top_expert(matrix):
 
 
 
-distribution_matrix = torch.load('/home/LeiFeng/xiaolong/moe_quantize/save/routing-count.pt')
-sorted_expert_indices_by_block = get_top_expert(distribution_matrix)
+# distribution_matrix = torch.load('/home/LeiFeng/xiaolong/moe_quantize/save/routing-count.pt')
+# sorted_expert_indices_by_block = get_top_expert(distribution_matrix)
     
     
 
