@@ -16,4 +16,9 @@
 DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_openmoe.py \
       --model_name OrionZheng/openmoe-8b \
       --bits main_4.attn_4 \
-      --bits_name main_4.attn_4
+      --bits_name main_4.attn_4 &
+
+DEBUG=0 CUDA_VISIBLE_DEVICES=1 python quantize_gptq_openmoe.py \
+      --model_name OrionZheng/openmoe-8b \
+      --bits main_4.attn_4.layer_5_2.layer_11_2.layer_17_2.layer_23_2 \
+      --bits_name main_4.attn_4.layer_5_2.layer_11_2.layer_17_2.layer_23_2

@@ -84,7 +84,7 @@ def openmoe_quantize_config(bits_config_str: str):
     for layer, bits in special_layer_bits:
         print(f"Applying {bits}-bit to layer {layer}")
         for key in openmoe_bit:
-            if f"model.layers.{int(layer)}.mlp.expert" in key:
+            if f"model.layers.{int(layer)}.mlp.experts" in key:
                 openmoe_bit[key] = int(bits)
 
     # Special module name keywords, e.g. "keyword__gate_proj__4": 4-bit for all gate_proj modules
@@ -145,7 +145,7 @@ def main():
         desc_act=False,  # set to False can significantly speed up inference but the perplexity may slightly bad
         model_file_base_name=quantized_model_file_base_name
     )
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
     model = OpenMoeGPTQForCausalLM.from_pretrained(
         pretrained_model_name_or_path=model_name,
