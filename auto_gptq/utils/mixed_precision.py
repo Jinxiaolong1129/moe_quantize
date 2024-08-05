@@ -96,7 +96,7 @@ def parse_config_string(config_string):
 
 
 def generate_expert_topx_moe_quantize_bit_config(bit_config_str):
-    distribution_matrix = torch.load('/home/LeiFeng/xiaolong/moe_quantize/save/routing-count.pt')
+    distribution_matrix = None
     sorted_expert_indices_by_block = get_top_expert(distribution_matrix)
     
     bit_config_dict = parse_config_string(bit_config_str)  # replace args.bits with your actual pattern string
@@ -488,7 +488,7 @@ def moe_quantize_config(args):
 
     args.bits = 'moe.shared_28'
 
-    distribution_matrix = torch.load('/home/LeiFeng/xiaolong/moe_quantize/save/routing-count.pt')
+    distribution_matrix = None
     sorted_expert_indices_by_block = get_top_expert(distribution_matrix)
     
     # top moe expert bit

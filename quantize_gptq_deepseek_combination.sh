@@ -1,4 +1,4 @@
-!/bin/bash
+# !/bin/bash
 
 export PYTHONPATH=auto_gptq/:$PYTHONPATH
 

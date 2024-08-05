@@ -11,7 +11,7 @@ import logging
 from datasets import load_dataset
 
 from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig, AutoGPTQForCausalLM_mixed_precision, BaseQuantizeConfig_mixed_precision
-from auto_gptq import moe_quantize_config
+from auto_gptq import deepseek_quantize_config
 import logging
 import csv
 import time
@@ -101,7 +101,7 @@ def main():
     logging.info(f"Quantized model will be saved to {quant_path}")
     logging.info(f"Quantized model file base name: {quantized_model_file_base_name}")
     
-    deeepseek_bit = moe_quantize_config(args)
+    deeepseek_bit = deepseek_quantize_config(args)
     logging.info(f"Quantization config: {deeepseek_bit}")
     print(f"Quantization config:\n {deeepseek_bit}")
     
@@ -129,9 +129,9 @@ def main():
     model.save_quantized(quant_path)
     logging.info(f"Quantized model saved to {quant_path}")
 
-    lm_eval_gptq(args)
+    # lm_eval_gptq(args)
 
-    
+    # /home/ycuser01/xiaolong/moe_quantize/quantize_gptq_deepseek_combination.py
     
 
     

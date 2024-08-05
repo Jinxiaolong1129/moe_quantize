@@ -724,9 +724,7 @@ def generate_deeepseek_combination_alpha(bit_config_str):
 
 
 
-
-
-def moe_quantize_config(args):
+def deepseek_quantize_config(args):
     # only 2,4,8
     if args.bits == 'all_4':
         moe_block_bit_dict = {}
