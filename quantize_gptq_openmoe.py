@@ -6,7 +6,7 @@ from argparse import ArgumentParser
 
 import torch
 
-sys.path.append("/data2/pzli/moe_quantize/optimum/")  # Add the path to Python's search path
+# sys.path.append("/data2/pzli/moe_quantize/optimum/")  # Add the path to Python's search path
 print(sys.path)
 os.environ['HF_TOKEN'] = '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'
 
