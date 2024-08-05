@@ -159,9 +159,13 @@ def main():
     total_bits = 0
     total_num_params = 0
     for name, module in model.model.named_modules():
-        if name not in openmoe_bits:
+        bits = None
+        for bit_key in openmoe_bits:
+            if bit_key in name:
+                bits = openmoe_bits[bit_key]
+                break
+        if bits is None:
             continue
-        bits = openmoe_bits[name]
         num_params = sum(p.numel() for p in module.parameters())
         total_bits += bits * num_params
         total_num_params += num_params
