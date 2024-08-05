@@ -158,7 +158,7 @@ def main():
     # Calculate the average bit-width of the model
     total_bits = 0
     total_num_params = 0
-    for name, module in model.model.named_modules():
+    for name, param in model.model.named_parameters():
         bits = None
         for bit_key in openmoe_bits:
             if bit_key in name:
@@ -166,7 +166,7 @@ def main():
                 break
         if bits is None:
             continue
-        num_params = sum(p.numel() for p in module.parameters())
+        num_params = param.numel()
         total_bits += bits * num_params
         total_num_params += num_params
 
