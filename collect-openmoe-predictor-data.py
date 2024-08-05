@@ -382,7 +382,7 @@ def collect_openmoe_ffn_with_residual_cosine_similarity(
 
     block_ffn_input_output_pair_cos_sim = {}
     for name, module in model.named_modules():
-        if isinstance(module, OpenMoeDecoderLayer):
+        if isinstance(module, OpenMoeDecoderLayer) and module.moe:
             block_ffn_input_output_pair_cos_sim[name] = []
             module._module_name = name
             module.forward = _custom_decoder_forward.__get__(module, type(module))
