@@ -143,7 +143,8 @@ def main():
         bits={k: v for k, v in openmoe_bits.items() if v != 16},  # quantize model to 4-bit
         group_size=args.group_size,  # it is recommended to set the value to 128
         desc_act=False,  # set to False can significantly speed up inference but the perplexity may slightly bad
-        model_file_base_name=quantized_model_file_base_name
+        model_file_base_name=quantized_model_file_base_name,
+        damp_percent=0.02
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
