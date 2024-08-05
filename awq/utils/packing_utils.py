@@ -15,39 +15,32 @@ def unpack_awq(qweight: torch.Tensor, qzeros: torch.Tensor, bits: int):
     iweights = iweights.view(iweights.shape[0], -1)
 
     # unpacking columnwise
-    izeros = torch.bitwise_right_shift(qzeros[:, :, None], shifts[None, None, :]).to(
-        torch.int8  # smallest dtype available
-    )
-    izeros = izeros.view(izeros.shape[0], -1)
+    if qzeros is not None:
+        izeros = torch.bitwise_right_shift(qzeros[:, :, None], shifts[None, None, :]).to(
+            torch.int8  # smallest dtype available
+        )
+        izeros = izeros.view(izeros.shape[0], -1)
+    else:
+        izeros = qzeros
 
     return iweights, izeros
 
 
 def reverse_awq_order(iweights: torch.Tensor, izeros: torch.Tensor, bits: int):
-    if bits == 4:
-        reverse_order_tensor = torch.arange(
-            izeros.shape[-1],
-            dtype=torch.int32,
-            device=izeros.device,
-        )
-        reverse_order_tensor = reverse_order_tensor.view(-1, 32 // bits)
-        reverse_order_tensor = reverse_order_tensor[:, AWQ_REVERSE_ORDER]
-        reverse_order_tensor = reverse_order_tensor.view(-1)
+    reverse_order_tensor = torch.arange(
+        iweights.shape[-1],
+        dtype=torch.int32,
+        device=izeros.device,
+    )
+    reverse_order_tensor = reverse_order_tensor.view(-1, 32 // bits)
+    reverse_order_tensor = reverse_order_tensor[:, AWQ_REVERSE_ORDER]
+    reverse_order_tensor = reverse_order_tensor.view(-1)
 
+    if izeros is not None:
         izeros = izeros[:, reverse_order_tensor]
-        iweights = iweights[:, reverse_order_tensor]
+    iweights = iweights[:, reverse_order_tensor]
 
-        return iweights, izeros
-    elif bits == 2:
-        # For 2-bit, if no reordering is needed, keep the order sequential
-        # order_map = list(range(32 // bits))  # This will be [0, 1, 2, ..., 15]
-
-        # izeros = izeros[:, order_map]
-        # iweights = iweights[:, order_map]
-
-        return iweights, izeros
-    elif bits == 8:
-        return iweights, izeros
+    return iweights, izeros
 
 
 def pack_exllama(iweights: torch.Tensor, izeros: torch.Tensor, bits: int):

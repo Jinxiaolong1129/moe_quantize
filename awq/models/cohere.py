@@ -2,41 +2,42 @@ import tqdm
 from typing import List, Tuple
 from .base import BaseAWQForCausalLM
 from awq.utils.fused_utils import fuse_qkv
-from awq.modules.fused.block import LlamaLikeBlock
-from awq.modules.fused.model import LlamaLikeModel
-from transformers.models.qwen2.modeling_qwen2 import (
-    Qwen2DecoderLayer as OldQwen2DecoderLayer,
-    Qwen2ForCausalLM as OldQwen2ForCausalLM,
+from awq.modules.fused.block import CohereBlock
+from awq.modules.fused.model import CohereModel
+from transformers.models.cohere.modeling_cohere import (
+    CohereDecoderLayer as OldCohereDecoderLayer,
+    CohereForCausalLM as OldCohereForCausalLM,
 )
 from awq.modules.fused.norm import FasterTransformerRMSNorm
 
-
-class Qwen2AWQForCausalLM(BaseAWQForCausalLM):
-    layer_type = "Qwen2DecoderLayer"
+class CohereAWQForCausalLM(BaseAWQForCausalLM):
+    layer_type = "CohereDecoderLayer"
     max_seq_len_key = "max_position_embeddings"
 
     @staticmethod
-    def fuse_layers(model: OldQwen2ForCausalLM):
-        fuser = Qwen2Fuser(model)
+    def fuse_layers(model: OldCohereForCausalLM):
+        fuser = CohereFuser(model)
         fuser.fuse_transformer()
 
     @staticmethod
-    def get_model_layers(model: OldQwen2ForCausalLM):
+    def get_model_layers(model: OldCohereForCausalLM):
         return model.model.layers
 
     @staticmethod
-    def get_act_for_scaling(module: OldQwen2DecoderLayer):
+    def get_act_for_scaling(module: OldCohereDecoderLayer):
         return dict(is_scalable=False)
 
     @staticmethod
-    def move_embed(model: OldQwen2ForCausalLM, device: str):
+    def move_embed(model: OldCohereForCausalLM, device: str):
         model.model.embed_tokens = model.model.embed_tokens.to(device)
 
     @staticmethod
-    def get_layers_for_scaling(module: OldQwen2DecoderLayer, input_feat, module_kwargs):
+    def get_layers_for_scaling(
+        module: OldCohereDecoderLayer, input_feat, module_kwargs
+    ):
         layers = []
 
-        # attention input
+        # input
         layers.append(
             dict(
                 prev_op=module.input_layernorm,
@@ -44,9 +45,11 @@ class Qwen2AWQForCausalLM(BaseAWQForCausalLM):
                     module.self_attn.q_proj,
                     module.self_attn.k_proj,
                     module.self_attn.v_proj,
+                    module.mlp.gate_proj,
+                    module.mlp.up_proj,
                 ],
                 inp=input_feat["self_attn.q_proj"],
-                module2inspect=module.self_attn,
+                module2inspect=module,
                 kwargs=module_kwargs,
             )
         )
@@ -62,17 +65,7 @@ class Qwen2AWQForCausalLM(BaseAWQForCausalLM):
                 )
             )
 
-        # linear 1
-        layers.append(
-            dict(
-                prev_op=module.post_attention_layernorm,
-                layers=[module.mlp.gate_proj, module.mlp.up_proj],
-                inp=input_feat["mlp.gate_proj"],
-                module2inspect=module.mlp,
-            )
-        )
-
-        # linear 2
+        # linear out
         layers.append(
             dict(
                 prev_op=module.mlp.up_proj,
@@ -83,21 +76,20 @@ class Qwen2AWQForCausalLM(BaseAWQForCausalLM):
 
         return layers
 
-
-class Qwen2Fuser:
-    def __init__(self, model: OldQwen2ForCausalLM):
+class CohereFuser:
+    def __init__(self, model: OldCohereForCausalLM):
         self.model = model
 
-        self.qwen2_blocks: List[Tuple[str, OldQwen2DecoderLayer]] = [
+        self.cohere_blocks: List[Tuple[str, OldCohereDecoderLayer]] = [
             (name, module)
             for name, module in self.model.named_modules()
-            if "Qwen2DecoderLayer".lower() in module.__class__.__name__.lower()
+            if "CohereDecoderLayer".lower() in module.__class__.__name__.lower()
         ]
 
     def fuse_transformer(self):
         blocks = []
 
-        module: OldQwen2DecoderLayer
+        module: OldCohereDecoderLayer
         for module in tqdm.tqdm(self.model.model.layers, desc="Fusing layers..."):
             device = next(iter(module.state_dict().values())).device
             qkv = fuse_qkv(
@@ -106,15 +98,13 @@ class Qwen2Fuser:
                 module.self_attn.k_proj,
                 module.self_attn.v_proj,
             )
-            norm_1 = FasterTransformerRMSNorm(
-                module.input_layernorm.weight, module.input_layernorm.variance_epsilon
-            )
-            norm_2 = FasterTransformerRMSNorm(
-                module.post_attention_layernorm.weight,
-                module.post_attention_layernorm.variance_epsilon,
-            )
+            norm_1 = module.input_layernorm
+            # norm_2 = FasterTransformerRMSNorm(
+            #     module.post_attention_layernorm.weight,
+            #     module.post_attention_layernorm.variance_epsilon,
+            # )
             blocks.append(
-                LlamaLikeBlock(
+                CohereBlock(
                     hidden_size=self.model.config.hidden_size,
                     n_heads=self.model.config.num_attention_heads,
                     n_kv_heads=self.model.config.num_key_value_heads,
@@ -122,14 +112,14 @@ class Qwen2Fuser:
                     o_proj=module.self_attn.o_proj,
                     mlp=module.mlp,
                     norm_1=norm_1,
-                    norm_2=norm_2,
+                    # norm_2=norm_2,
                     dev=device,
                     max_seq_len=self.model.config.max_seq_len,
                     rope_theta=self.model.config.rope_theta,
                 )
             )
 
-        self.model.model = LlamaLikeModel(
+        self.model.model = CohereModel(
             self.model.config.vocab_size,
             blocks,
             self.model.model.embed_tokens,

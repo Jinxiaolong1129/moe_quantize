@@ -1,39 +1,40 @@
 import tqdm
+import torch
 from typing import List, Tuple
 from .base import BaseAWQForCausalLM
 from awq.utils.fused_utils import fuse_qkv
 from awq.modules.fused.block import LlamaLikeBlock
 from awq.modules.fused.model import LlamaLikeModel
-from transformers.models.qwen2.modeling_qwen2 import (
-    Qwen2DecoderLayer as OldQwen2DecoderLayer,
-    Qwen2ForCausalLM as OldQwen2ForCausalLM,
+from transformers.models.gemma.modeling_gemma import (
+    GemmaDecoderLayer as OldGemmaDecoderLayer,
+    GemmaForCausalLM as OldGemmaForCausalLM,
 )
 from awq.modules.fused.norm import FasterTransformerRMSNorm
 
 
-class Qwen2AWQForCausalLM(BaseAWQForCausalLM):
-    layer_type = "Qwen2DecoderLayer"
-    max_seq_len_key = "max_position_embeddings"
+class GemmaAWQForCausalLM(BaseAWQForCausalLM):
+    layer_type = "GemmaDecoderLayer"
+    max_new_tokens_key = "max_position_embeddings"
 
     @staticmethod
-    def fuse_layers(model: OldQwen2ForCausalLM):
-        fuser = Qwen2Fuser(model)
+    def fuse_layers(model: OldGemmaDecoderLayer):
+        fuser = GemmaFuser(model)
         fuser.fuse_transformer()
 
     @staticmethod
-    def get_model_layers(model: OldQwen2ForCausalLM):
+    def get_model_layers(model: OldGemmaForCausalLM):
         return model.model.layers
 
     @staticmethod
-    def get_act_for_scaling(module: OldQwen2DecoderLayer):
+    def get_act_for_scaling(module: OldGemmaDecoderLayer):
         return dict(is_scalable=False)
 
     @staticmethod
-    def move_embed(model: OldQwen2ForCausalLM, device: str):
+    def move_embed(model: OldGemmaForCausalLM, device: str):
         model.model.embed_tokens = model.model.embed_tokens.to(device)
 
     @staticmethod
-    def get_layers_for_scaling(module: OldQwen2DecoderLayer, input_feat, module_kwargs):
+    def get_layers_for_scaling(module: OldGemmaDecoderLayer, input_feat, module_kwargs):
         layers = []
 
         # attention input
@@ -84,20 +85,20 @@ class Qwen2AWQForCausalLM(BaseAWQForCausalLM):
         return layers
 
 
-class Qwen2Fuser:
-    def __init__(self, model: OldQwen2ForCausalLM):
+class GemmaFuser:
+    def __init__(self, model: OldGemmaForCausalLM):
         self.model = model
 
-        self.qwen2_blocks: List[Tuple[str, OldQwen2DecoderLayer]] = [
+        self.Gemma_blocks: List[Tuple[str, OldGemmaDecoderLayer]] = [
             (name, module)
             for name, module in self.model.named_modules()
-            if "Qwen2DecoderLayer".lower() in module.__class__.__name__.lower()
+            if "GemmaDecoderLayer".lower() in module.__class__.__name__.lower()
         ]
 
     def fuse_transformer(self):
         blocks = []
 
-        module: OldQwen2DecoderLayer
+        module: OldGemmaDecoderLayer
         for module in tqdm.tqdm(self.model.model.layers, desc="Fusing layers..."):
             device = next(iter(module.state_dict().values())).device
             qkv = fuse_qkv(
@@ -106,12 +107,17 @@ class Qwen2Fuser:
                 module.self_attn.k_proj,
                 module.self_attn.v_proj,
             )
+            with torch.no_grad():
+                # GemmaRMSNorm is different from Llama's in that it multiplies
+                # (1 + weight) to the output, instead of just weight.
+                module.input_layernorm.weight += 1
+                module.post_attention_layernorm.weight += 1
             norm_1 = FasterTransformerRMSNorm(
-                module.input_layernorm.weight, module.input_layernorm.variance_epsilon
+                module.input_layernorm.weight, module.input_layernorm.eps
             )
             norm_2 = FasterTransformerRMSNorm(
                 module.post_attention_layernorm.weight,
-                module.post_attention_layernorm.variance_epsilon,
+                module.post_attention_layernorm.eps,
             )
             blocks.append(
                 LlamaLikeBlock(
@@ -126,9 +132,14 @@ class Qwen2Fuser:
                     dev=device,
                     max_seq_len=self.model.config.max_seq_len,
                     rope_theta=self.model.config.rope_theta,
+                    head_dim=self.model.config.head_dim,
                 )
             )
-
+        
+        with torch.no_grad():
+            # Normalize Gemma's embedding layer
+            self.model.model.embed_tokens.weight *= self.model.config.hidden_size**0.5
+        
         self.model.model = LlamaLikeModel(
             self.model.config.vocab_size,
             blocks,

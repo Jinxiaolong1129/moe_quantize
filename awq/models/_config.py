@@ -10,7 +10,7 @@ class AwqConfig(PushToHubMixin):
     quant_method: str = field(default="awq")
     zero_point: bool = field(default=True)
     q_group_size: int = field(default=128)
-    w_bit: int = field(default=4)  # TODO (xiaolong) if want to do mixed precision, need to change this to a list
+    w_bit: int = field(default=4)
     version: str = field(default="gemm")
     config_file_name = "config.json"
     modules_to_not_convert: Optional[List] = None

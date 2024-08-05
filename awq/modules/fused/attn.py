@@ -25,13 +25,11 @@ if HF_NEW_CACHE_FORMAT:
 
 
 class RoPE(nn.Module):
-    def __init__(self, hidden_size, n_heads, max_seq_len, device, rope_theta):
+    def __init__(self, head_dim, max_seq_len, device, rope_theta):
         super(RoPE, self).__init__()
 
         self.freqs_cis = nn.Parameter(
-            self.precompute_freqs_cis(
-                hidden_size // n_heads, max_seq_len * 2, rope_theta
-            ).to(device),
+            self.precompute_freqs_cis(head_dim, max_seq_len * 2, rope_theta).to(device),
             requires_grad=False,
         )
 
@@ -118,6 +116,9 @@ class QuantAttentionFused(nn.Module):
         use_alibi=False,
         attention_shapes=None,
         rope_theta=10000,
+        partial_rotary_factor=1.0,
+        head_dim=None,
+        attn_logit_softcapping=None,
         **kwargs
     ):
         super().__init__()
@@ -125,7 +126,11 @@ class QuantAttentionFused(nn.Module):
         self.n_heads = n_heads
         self.n_kv_heads = n_kv_heads
         self.n_kv_groups = n_heads // n_kv_heads if n_kv_heads != 0 else 0
-        self.head_dim = self.hidden_size // n_heads
+        self.head_dim = head_dim
+
+        if head_dim is None:
+            self.head_dim = hidden_size // n_heads
+
         self.qkv_proj = qkv_layer
         self.o_proj = o_proj
         self.start_pos = 0
@@ -162,9 +167,15 @@ class QuantAttentionFused(nn.Module):
             self.is_neox = False
         else:
             self.alibi = None
-            self.rope = RoPE(hidden_size, n_heads, max_seq_len, dev, rope_theta)
-            self.rotary_dim = self.head_dim
+            self.partial_rotary_factor = partial_rotary_factor
+            self.rotary_dim = int(self.head_dim * self.partial_rotary_factor)
+            self.rope = RoPE(self.rotary_dim, max_seq_len, dev, rope_theta)
             self.is_neox = True
+
+        if kwargs.get("is_neox") is not None:
+            self.is_neox = kwargs["is_neox"]
+        
+        self.attn_logit_softcapping = attn_logit_softcapping
 
     def forward(
         self, hidden_states: torch.Tensor, attention_mask=None, *args, **kwargs
@@ -183,16 +194,22 @@ class QuantAttentionFused(nn.Module):
             # Always reset to 0
             self.start_pos = 0
 
+        hf_is_generating = False
+        hf_is_first_forward = "past_key_value" in kwargs and kwargs["past_key_value"] is None
+        hf_is_new_cache_first_forward = "past_key_value" in kwargs and isinstance(kwargs["past_key_value"], DynamicCache) and kwargs["past_key_value"].get_seq_length() == 0
+
+        if self.is_hf_transformers and "use_cache" in kwargs:
+            hf_is_generating = kwargs["use_cache"]
+
+        # print(kwargs["past_key_value"].get_seq_length())
+
         # In case we re-generate, we need to refresh the starting position
         # to 0. We detect it by checking if `past_key_values` is set to None,
         # which indicates that we are on the first step of `generate()`.
         # This is only applicable for `transformers` integration
-        if (
-            self.is_hf_transformers
-            and "past_key_value" in kwargs
-            and kwargs["past_key_value"] is None
-        ):
+        if (self.is_hf_transformers and (hf_is_first_forward or hf_is_new_cache_first_forward)) or (self.is_hf_transformers and not hf_is_generating):
             self.start_pos = 0
+    
 
         xqkv = self.qkv_proj(hidden_states)
         xqkv = xqkv.view((bsz, seqlen) + self.attention_shapes["xqkv_view"])
@@ -201,15 +218,27 @@ class QuantAttentionFused(nn.Module):
         xk = self.attention_shapes["xk_slice"](xqkv)
         xv = self.attention_shapes["xv_slice"](xqkv)
 
-        if seqlen > 1 or not FT_INSTALLED:
+        if seqlen > 1 or self.partial_rotary_factor < 1 or not FT_INSTALLED:
             xq = xq.view((bsz, seqlen) + self.attention_shapes["xq_view"])
             xk = xk.view((bsz, seqlen) + self.attention_shapes["xk_view"])
             xv = xv.view((bsz, seqlen) + self.attention_shapes["xv_view"])
 
             if not self.use_alibi:
-                xq, xk = self.rope.forward(xq, xk, self.start_pos, seqlen)
-
-            self.cache.to(xq)
+                # Partial rotary embedding
+                if self.partial_rotary_factor < 1:
+                    xq_rot, xq_pass = (
+                        xq[..., : self.rotary_dim],
+                        xq[..., self.rotary_dim :],
+                    )
+                    xk_rot, xk_pass = (
+                        xk[..., : self.rotary_dim],
+                        xk[..., self.rotary_dim :],
+                    )
+                    xq_rot, xk_rot = self.rope.forward(xq_rot, xk_rot, self.start_pos, seqlen)
+                    xq = torch.cat((xq_rot, xq_pass), dim=-1)
+                    xk = torch.cat((xk_rot, xk_pass), dim=-1)
+                else:
+                    xq, xk = self.rope.forward(xq, xk, self.start_pos, seqlen)
 
             values_store = xv.transpose(2, 1)
             keys_store = (
@@ -218,6 +247,7 @@ class QuantAttentionFused(nn.Module):
                 .contiguous()
             )
 
+            self.cache.to(xq)
             self.cache.update_kv(values_store, keys_store, bsz, self.start_pos, seqlen)
 
             # Only necessary to retrieve from cache when we are not processing context
@@ -238,11 +268,22 @@ class QuantAttentionFused(nn.Module):
             values = values.transpose(1, 2)
             scores = torch.matmul(xq, keys.transpose(2, 3)) / math.sqrt(self.head_dim)
 
+            # Used in Gemma2
+            if self.attn_logit_softcapping is not None:
+                scores = scores / self.attn_logit_softcapping
+                scores = torch.tanh(scores)
+                scores = scores * self.attn_logit_softcapping
+
             if self.use_alibi:
                 scores = self.alibi.forward(scores, seqlen)
 
             # When seqlen is 1, there is nothing else to attend to
             if attention_mask is not None and seqlen > 1:
+                # For llama-arch, the causal mask is preallocated with bsz x 1 x max_seq_len x max_seq_len, thus we 
+                # need to slice it
+                if attention_mask.shape[-1] != seqlen:
+                    attention_mask = attention_mask[:, :, :seqlen, :seqlen]
+
                 scores = (
                     scores + attention_mask
                 )  # (bs, n_local_heads, slen, cache_len + slen)
@@ -273,10 +314,14 @@ class QuantAttentionFused(nn.Module):
         attn_output = self.o_proj(attention_weight)
         self.start_pos += seqlen
 
+        if self.is_hf_transformers and not hf_is_generating:
+            self.start_pos = 0
+
         # past_key_value is replaced with cache_v, cache_k, returning empty data
         # we pass a dummy past kv cache for transformers to be able to retrieve the correct info
         # about past key length
         past_key_value = [torch.zeros(1, 1, self.start_pos, 1)]
+
 
         if HF_NEW_CACHE_FORMAT and self.is_hf_transformers:
             new_cache = DynamicCache()

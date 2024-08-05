@@ -54,7 +54,7 @@ def evaluate_perplexity(model, tokenizer):
             progress_bar.set_description(f"Perplexity {curr_ppl:.3f}")
 
     ppl = _perplexity(nlls, n_samples, seqlen)
-    print(f"Perplexity: {ppl:.3f}")
+
     return ppl.item()
 
 
@@ -175,31 +175,3 @@ if __name__ == "__main__":
     # model_id = "distil-whisper/distil-small.en" # 3.594
     model_id = "distil-whisper/distil-medium.en"  # 3.436
     eval_librispeech(model_id)
-
-
-# LlamaForCausalLM(
-#   (model): LlamaModel(
-#     (embed_tokens): Embedding(32000, 4096)
-#     (layers): ModuleList(
-#       (0-31): 32 x LlamaDecoderLayer(
-#         (self_attn): LlamaSdpaAttention(
-#           (q_proj): WQLinear_GEMM()
-#           (k_proj): WQLinear_GEMM()
-#           (v_proj): WQLinear_GEMM()
-#           (o_proj): WQLinear_GEMM()
-#           (rotary_emb): LlamaRotaryEmbedding()
-#         )
-#         (mlp): LlamaMLP(
-#           (gate_proj): WQLinear_GEMM()
-#           (up_proj): WQLinear_GEMM()
-#           (down_proj): WQLinear_GEMM()
-#           (act_fn): SiLU()
-#         )
-#         (input_layernorm): LlamaRMSNorm()
-#         (post_attention_layernorm): LlamaRMSNorm()
-#       )
-#     )
-#     (norm): LlamaRMSNorm()
-#   )
-#   (lm_head): Linear(in_features=4096, out_features=32000, bias=False)
-# )

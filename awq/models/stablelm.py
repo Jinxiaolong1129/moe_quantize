@@ -4,36 +4,38 @@ from .base import BaseAWQForCausalLM
 from awq.utils.fused_utils import fuse_qkv
 from awq.modules.fused.block import LlamaLikeBlock
 from awq.modules.fused.model import LlamaLikeModel
-from transformers.models.qwen2.modeling_qwen2 import (
-    Qwen2DecoderLayer as OldQwen2DecoderLayer,
-    Qwen2ForCausalLM as OldQwen2ForCausalLM,
+from transformers.models.stablelm import StableLmForCausalLM as OldStableLmForCausalLM
+from transformers.models.stablelm.modeling_stablelm import (
+    StableLmDecoderLayer as OldStableLmDecoderLayer,
 )
 from awq.modules.fused.norm import FasterTransformerRMSNorm
 
 
-class Qwen2AWQForCausalLM(BaseAWQForCausalLM):
-    layer_type = "Qwen2DecoderLayer"
+class StableLmAWQForCausalLM(BaseAWQForCausalLM):
+    layer_type = "StableLmDecoderLayer"
     max_seq_len_key = "max_position_embeddings"
 
     @staticmethod
-    def fuse_layers(model: OldQwen2ForCausalLM):
-        fuser = Qwen2Fuser(model)
+    def fuse_layers(model: OldStableLmForCausalLM):
+        fuser = StableLmFuser(model)
         fuser.fuse_transformer()
 
     @staticmethod
-    def get_model_layers(model: OldQwen2ForCausalLM):
+    def get_model_layers(model: OldStableLmForCausalLM):
         return model.model.layers
 
     @staticmethod
-    def get_act_for_scaling(module: OldQwen2DecoderLayer):
+    def get_act_for_scaling(module: OldStableLmForCausalLM):
         return dict(is_scalable=False)
 
     @staticmethod
-    def move_embed(model: OldQwen2ForCausalLM, device: str):
+    def move_embed(model: OldStableLmForCausalLM, device: str):
         model.model.embed_tokens = model.model.embed_tokens.to(device)
 
     @staticmethod
-    def get_layers_for_scaling(module: OldQwen2DecoderLayer, input_feat, module_kwargs):
+    def get_layers_for_scaling(
+        module: OldStableLmDecoderLayer, input_feat, module_kwargs
+    ):
         layers = []
 
         # attention input
@@ -84,20 +86,20 @@ class Qwen2AWQForCausalLM(BaseAWQForCausalLM):
         return layers
 
 
-class Qwen2Fuser:
-    def __init__(self, model: OldQwen2ForCausalLM):
+class StableLmFuser:
+    def __init__(self, model: OldStableLmForCausalLM):
         self.model = model
 
-        self.qwen2_blocks: List[Tuple[str, OldQwen2DecoderLayer]] = [
+        self.stablelm_blocks: List[Tuple[str, OldStableLmDecoderLayer]] = [
             (name, module)
             for name, module in self.model.named_modules()
-            if "Qwen2DecoderLayer".lower() in module.__class__.__name__.lower()
+            if "StableLmDecoderLayer".lower() in module.__class__.__name__.lower()
         ]
 
     def fuse_transformer(self):
         blocks = []
 
-        module: OldQwen2DecoderLayer
+        module: OldStableLmDecoderLayer
         for module in tqdm.tqdm(self.model.model.layers, desc="Fusing layers..."):
             device = next(iter(module.state_dict().values())).device
             qkv = fuse_qkv(
@@ -106,13 +108,8 @@ class Qwen2Fuser:
                 module.self_attn.k_proj,
                 module.self_attn.v_proj,
             )
-            norm_1 = FasterTransformerRMSNorm(
-                module.input_layernorm.weight, module.input_layernorm.variance_epsilon
-            )
-            norm_2 = FasterTransformerRMSNorm(
-                module.post_attention_layernorm.weight,
-                module.post_attention_layernorm.variance_epsilon,
-            )
+            norm_1 = module.input_layernorm
+            norm_2 = module.post_attention_layernorm
             blocks.append(
                 LlamaLikeBlock(
                     hidden_size=self.model.config.hidden_size,
@@ -126,6 +123,7 @@ class Qwen2Fuser:
                     dev=device,
                     max_seq_len=self.model.config.max_seq_len,
                     rope_theta=self.model.config.rope_theta,
+                    partial_rotary_factor=self.model.config.partial_rotary_factor,
                 )
             )
 
