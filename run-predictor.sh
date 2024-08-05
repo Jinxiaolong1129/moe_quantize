@@ -1,6 +1,6 @@
 export WANDB_API_KEY=2b60f655a687ad1161d31f0002256865e1ace428
-for id in 5 11 17 23
-do
-    CUDA_VISIBLE_DEVICES=0 python run-openmoe-predictor.py --ffn_block_id=$id
-done
-#CUDA_VISIBLE_DEVICES=0 python run-openmoe-predictor.py
+#for id in 5 11 17 23
+#do
+#    CUDA_VISIBLE_DEVICES=0 python run-openmoe-predictor.py --ffn_block_id=$id
+#done
+CUDA_VISIBLE_DEVICES=0 python run-openmoe-predictor.py
