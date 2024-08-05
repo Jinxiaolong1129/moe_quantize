@@ -169,7 +169,7 @@ def main():
     average_bits = total_bits / total_num_params
     print(f"Average bit-width of the model w/ {bits_name}: {average_bits:.2f}")
 
-    quantization_dataset = get_wikitext2(tokenizer=tokenizer, seqlen=4096, nsamples=args.nsamples, split="train")
+    quantization_dataset = get_wikitext2(tokenizer=tokenizer, seqlen=2048, nsamples=args.nsamples, split="train")
     model.quantize(quantization_dataset)
     model.save_quantized(quant_path)
     logging.info(f"Quantized model saved to {quant_path}")
