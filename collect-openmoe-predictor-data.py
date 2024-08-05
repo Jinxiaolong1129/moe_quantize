@@ -320,7 +320,7 @@ def collect_openmoe_ffn_with_residual_predictor_test_data(
 def collect_openmoe_ffn_with_residual_cosine_similarity(
         seq_len=1024,
         num_samples=400,
-        save_dir="results/ffn_input_output_cosine_similarity"
+        save_dir="results/ffn_input_output_cosine_similarity_with_residual"
 ):
     model = OpenMoeForCausalLM.from_pretrained(
         "OrionZheng/openmoe-8b", torch_dtype=torch.bfloat16, device_map="auto"
