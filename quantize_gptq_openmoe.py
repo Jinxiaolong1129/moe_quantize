@@ -102,7 +102,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("--bits", type=str)
     parser.add_argument("--model_name", type=str, default=None)
-    parser.add_argument("--nsamples", type=int, default=512)
+    parser.add_argument("--nsamples", type=int, default=1024)
     parser.add_argument("--group_size", type=int, default=128)
     parser.add_argument("--bits_name", type=str, default=None)
     parser.add_argument("--bits_dict_overwrite", type=str, default=None)
