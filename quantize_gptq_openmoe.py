@@ -144,7 +144,7 @@ def main():
         group_size=args.group_size,  # it is recommended to set the value to 128
         desc_act=False,  # set to False can significantly speed up inference but the perplexity may slightly bad
         model_file_base_name=quantized_model_file_base_name,
-        damp_percent=0.02
+        damp_percent=0.1
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
