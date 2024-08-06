@@ -26,7 +26,7 @@ from .stablelmepoch import StableLMEpochGPTQForCausalLM
 from .xverse import XverseGPTQForCausalLM
 from .yi import YiGPTQForCausalLM
 from .deepseek import DeepSeekGPTQForCausalLM
-from .openmoe import OpenMoeGPTQForCausalLM
+from .hf_openmoe import HFOpenMoeGPTQForCausalLM
 
 GPTQ_CAUSAL_LM_MODEL_MAP = {
     "bloom": BloomGPTQForCausalLM,
@@ -54,7 +54,7 @@ GPTQ_CAUSAL_LM_MODEL_MAP = {
     "longllama": LongLlamaGPTQForCausalLM,
     "gemma": GemmaGPTQForCausalLM,
     "deepseek": DeepSeekGPTQForCausalLM,
-    "openmoe": OpenMoeGPTQForCausalLM,
+    "openmoe": HFOpenMoeGPTQForCausalLM,
 }
 
 
