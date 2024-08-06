@@ -20,7 +20,7 @@ from lm_eval.models.huggingface import HFLM
 from lm_eval.tasks import initialize_tasks
 
 LM_EVAL_TASK_KWARGS_DICT = {
-    "gpqa": {task: "gpqa_main_cot_zeroshot", "num_fewshot": 0, "batch_size": 16, "metric": "exact_match"}
+    "gpqa": {"task": "gpqa_main_cot_zeroshot", "num_fewshot": 0, "batch_size": 16, "metric": "exact_match"}
 }
 
 if __name__ == "__main__":
