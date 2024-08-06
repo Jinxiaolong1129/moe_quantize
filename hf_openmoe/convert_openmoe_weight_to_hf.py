@@ -5,6 +5,7 @@ import os
 from copy import deepcopy
 
 from fire import Fire
+from tqdm import tqdm
 
 from hf_openmoe import HFOpenMoeForCausalLM, HFOpenMoeConfig, HFOpenMoeTokenizer
 from openmoe import OpenMoeForCausalLM as OriginalOpenMoeForCausalLM
@@ -25,7 +26,7 @@ def convert_openmoe_weight_to_hf_openmoe(input_dir: str, output_dir: str):
     # rename
     moe_blocks = [i for i in range(config.num_hidden_layers) if (i + 1) % config.moe_layer_interval == 0]
 
-    for block_id in moe_blocks:
+    for block_id in tqdm(moe_blocks, desc="Running over MoE blocks"):
         # gate
         state_dict[f"model.layers.{block_id}.mlp.gate.weight"] = state_dict.pop(
             f"model.layers.{block_id}.mlp.gate_weight")
