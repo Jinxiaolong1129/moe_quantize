@@ -19,20 +19,15 @@
 # limitations under the License.
 """ PyTorch OpenMoE model."""
 import math
-from typing import List, Optional, Tuple, Union
+from typing import List, Union
+from typing import Optional, Tuple
 
 import torch
-import torch.nn.functional as F
 import torch.utils.checkpoint
-from colossalai.kernel.cuda_native.mha.flash_attn_2 import HAS_FLASH_ATTN
-from colossalai.kernel.triton.llama_act_combine_kernel import HAS_TRITON
-from colossalai.moe.layers import SparseMLP
-from colossalai.moe.manager import MOE_MANAGER
-from colossalai.moe.utils import set_moe_args
 from torch import nn
+from torch.nn import functional as F
 from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast
 from transformers.modeling_utils import PreTrainedModel
-from transformers.models.llama.configuration_llama import LlamaConfig
 from transformers.utils import (
     add_start_docstrings,
     add_start_docstrings_to_model_forward,
@@ -41,88 +36,11 @@ from transformers.utils import (
 )
 
 # from .llama_attn import LlamaAttention
-
-if HAS_TRITON:
-    pass
+from .configuration_hf_openmoe import HFOpenMoeConfig
 
 logger = logging.get_logger(__name__)
 
-_CONFIG_FOR_DOC = "LlamaConfig"
-
-
-def set_openmoe_args(
-        config: LlamaConfig,
-        num_experts: int,
-        moe_layer_interval: int,
-        router_topk: int = 2,
-        router_capacity_factor_train: float = 1.25,
-        router_capacity_factor_eval: float = 2.0,
-        router_min_capacity: int = 4,
-        router_noisy_policy: str = None,
-        router_drop_tks: bool = True,
-        router_aux_loss_factor: float = 0.01,
-        router_z_loss_factor: float = 0.0001,
-        mlp_gated: bool = True,
-        label_smoothing: float = 0.001,
-        z_loss_factor: float = 0.01,
-        enable_load_balance: bool = False,
-        load_balance_tolerance: float = 0.1,
-        load_balance_beam_width: int = 8,
-        load_balance_group_swap_factor: float = 0.4,
-        enable_kernel: bool = False,
-        enable_comm_overlap: bool = False,
-        enable_hierarchical_alltoall: bool = False,
-) -> None:
-    """
-    MoE related arguments.
-    It inserts the MoE arguments into the Llama config.
-
-    Args:
-        config (LlamaConfig): Transformers Llama config.
-        num_experts (int, optional): Number of experts.
-        moe_layer_interval (int, optional): The interval moe layer.
-        router_topk (int, optional): Moe router top k. Defaults to 2.
-        router_capacity_factor_train (float, optional): Moe router max capacity for train. Defaults to 1.25.
-        router_capacity_factor_eval (float, optional): Moe router max capacity for eval. Defaults to 2.0.
-        router_min_capacity (int, optional): Moe router min capacity. Defaults to 4.
-        router_noisy_policy (str, optional): Moe router noisy policy. You can choose [Jitter, Gaussian, None]. Defaults to None.
-        router_drop_tks (bool, optional): Whether moe router drop tokens which exceed max capacity. Defaults to True.
-        router_aux_loss_factor (float, optional): Moe router aux loss. You can refer to STMoE for details. Defaults to 0.01.
-        router_z_loss_factor (float, optional): Moe router z loss. You can refer to STMoE for details. Defaults to 0.01.
-        mlp_gated (bool, optional): Use gate in mlp. Defaults to True.
-        label_smoothing (float, optional): Label smoothing. Defaults to 0.001.
-        z_loss_factor (float, optional): The final outputs' classification z loss factor. Defaults to 0.01.
-        enable_load_balance (bool, optional): Expert load balance. Defaults to False.
-        load_balance_tolerance (float, optional): Expert load balance search's difference tolerance. Defaults to 0.1.
-        load_balance_beam_width (int, optional): Expert load balance search's beam width. Defaults to 8.
-        load_balance_group_swap_factor (float, optional): Expert load balance group swap factor. Longer value encourages less swap. Defaults to 0.4.
-        enable_kernel (bool, optional): Use kernel optimization. Defaults to False.
-        enable_comm_overlap (bool, optional): Use communication overlap for MoE. Recommended to enable for muiti-node training. Defaults to False.
-        enable_hierarchical_alltoall (bool, optional): Use hierarchical alltoall for MoE. Defaults to False.
-    """
-    moe_args = dict(
-        num_experts=num_experts,
-        moe_layer_interval=moe_layer_interval,
-        router_topk=router_topk,
-        router_capacity_factor_train=router_capacity_factor_train,
-        router_capacity_factor_eval=router_capacity_factor_eval,
-        router_min_capacity=router_min_capacity,
-        router_noisy_policy=router_noisy_policy,
-        router_drop_tks=router_drop_tks,
-        router_aux_loss_factor=router_aux_loss_factor,
-        router_z_loss_factor=router_z_loss_factor,
-        mlp_gated=mlp_gated,
-        label_smoothing=label_smoothing,
-        z_loss_factor=z_loss_factor,
-        enable_load_balance=enable_load_balance,
-        load_balance_tolerance=load_balance_tolerance,
-        load_balance_beam_width=load_balance_beam_width,
-        load_balance_group_swap_factor=load_balance_group_swap_factor,
-        enable_kernel=enable_kernel,
-        enable_comm_overlap=enable_comm_overlap,
-        enable_hierarchical_alltoall=enable_hierarchical_alltoall,
-    )
-    set_moe_args(config, moe_args)
+_CONFIG_FOR_DOC = "HFOpenMoeConfig"
 
 
 # Copied from transformers.models.bart.modeling_bart._make_causal_mask
@@ -225,18 +143,6 @@ class LlamaRMSNorm(nn.Module):
         return self.weight * hidden_states.to(input_dtype)
 
 
-def SwiGLU(x):
-    """Gated linear unit activation function.
-    Args:
-        x : input array
-        axis: the axis along which the split should be computed (default: -1)
-    """
-    size = x.shape[-1]
-    assert size % 2 == 0, "axis size must be divisible by 2"
-    x1, x2 = torch.split(x, size // 2, -1)
-    return x1 * (x2 * torch.sigmoid(x2))
-
-
 def swiglu_act_fn(x):
     """Gated linear unit activation function.
     Args:
@@ -249,18 +155,138 @@ def swiglu_act_fn(x):
     return x1 * (x2 * torch.sigmoid(x2))
 
 
-class OpenMoeMLP(torch.nn.Module):
-    def __init__(self, config):
+class HFOpenMoeMLP(torch.nn.Module):
+    def __init__(self, config: HFOpenMoeConfig):
         super().__init__()
+        assert config.hidden_act == "swiglu"
         self.ffn_dim = config.intermediate_size
         self.hidden_dim = config.hidden_size
 
-        self.gate_proj = nn.Linear(self.hidden_size, self.ffn_dim * 2)
-        self.up_proj = nn.Linear(self.hidden_size, self.intermediate_size)
-        self.down_proj = nn.Linear(self.ffn_dim, self.hidden_size)
+        self.gate_proj = nn.Linear(self.hidden_dim, self.ffn_dim * 2, bias=False)
+        self.up_proj = nn.Linear(self.hidden_dim, self.ffn_dim, bias=False)
+        self.down_proj = nn.Linear(self.ffn_dim, self.hidden_dim, bias=False)
 
     def forward(self, hidden_states):
         return self.down_proj(swiglu_act_fn(self.gate_proj(hidden_states)) * self.up_proj(hidden_states))
+
+
+def moe_cumsum(inputs: torch.Tensor):
+    return torch.cumsum(inputs, dim=0) - 1
+
+
+class HFOpenMoeTop2Router(torch.nn.Module):
+    def __init__(self, config: HFOpenMoeConfig):
+        super().__init__()
+        assert config.router_topk == 2
+        self.k_value = 2
+        self.capacity_factor_train = config.router_capacity_factor_train
+        self.capacity_factor_eval = config.router_capacity_factor_eval
+        self.min_capacity = config.router_min_capacity
+        self.drop_tks = config.router_drop_tks
+
+    def get_capacity(self, logits_shape):
+        capacity_factor = self.capacity_factor_train if self.training else self.capacity_factor_eval
+        capacity = math.floor(self.k_value * capacity_factor * logits_shape[-2] / logits_shape[-1])
+        capacity += capacity % 2
+        capacity = max(capacity, self.min_capacity)
+        assert capacity > 0
+        return int(capacity)
+
+    def forward(self, inputs: torch.Tensor) -> Tuple:
+        assert inputs.dtype == torch.float, "Router input should be FP32"
+
+        probs = F.softmax(inputs, dim=-1)
+        num_experts = probs.size(-1)
+        capacity = self.get_capacity(inputs.shape)
+
+        top1_idx = torch.argmax(probs, dim=-1)
+        mask1 = F.one_hot(top1_idx, num_classes=num_experts).to(torch.int32)
+        logits_except1 = probs.masked_fill(mask1.bool(), float("-inf"))
+        top2_idx = torch.argmax(logits_except1, dim=-1)
+        mask2 = F.one_hot(top2_idx, num_classes=num_experts).to(torch.int32)
+
+        rank1 = moe_cumsum(mask1)  # rank1: [s, e]
+        rank2 = moe_cumsum(mask2)
+        rank2 += torch.sum(mask1, dim=-2, keepdim=True)
+
+        mask1 *= torch.lt(rank1, capacity)
+        mask2 *= torch.lt(rank2, capacity)
+        used_capacity = mask1.sum(dim=0) + mask2.sum(dim=0)
+
+        rank1 = torch.sum(mask1 * rank1, dim=-1)
+        rank2 = torch.sum(mask2 * rank2, dim=-1)
+
+        weight1 = mask1 * probs.type_as(inputs)
+        weight2 = mask2 * probs.type_as(inputs)
+
+        cb_weight = torch.zeros(inputs.shape + (capacity,), device=inputs.device)
+        sec_mask = torch.zeros_like(cb_weight, dtype=torch.bool)
+        indices = torch.arange(0, inputs.shape[0], device=inputs.device)
+        cb_weight[indices, top1_idx[indices], rank1[indices]] += weight1[indices, top1_idx[indices]]
+        cb_weight[indices, top2_idx[indices], rank2[indices]] += weight2[indices, top2_idx[indices]]
+        sec_mask[indices, top1_idx[indices], rank1[indices]] |= mask1.bool()[indices, top1_idx[indices]]
+        sec_mask[indices, top2_idx[indices], rank2[indices]] |= mask2.bool()[indices, top2_idx[indices]]
+
+        return used_capacity, cb_weight, sec_mask
+
+
+class HFOpenMoeSparseMLP(torch.nn.Module):
+    def __init__(self, config: HFOpenMoeConfig):
+        super().__init__()
+        self.hidden_size = config.hidden_size
+        self.intermediate_size = config.intermediate_size
+        self.num_experts = config.num_experts
+
+        self.gate = torch.nn.Linear(self.hidden_size, config.num_experts, bias=False)
+
+        self.experts = nn.ModuleList([HFOpenMoeMLP(config) for _ in range(self.num_experts)])
+        self.router = HFOpenMoeTop2Router(config)
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        # reshape the input tokens
+        tokens = hidden_states.reshape(-1, self.hidden_size)
+        inputs = hidden_states
+
+        # the data type of the inputs in the gating should be fp32
+        fp32_input = tokens.to(torch.float)
+        self.gate = self.gate.to(torch.float)
+        gate_output = self.gate(fp32_input)
+
+        used_capacity, *route_result_list = self.router(inputs=gate_output)
+
+        sec_mask_f = route_result_list[1].type_as(inputs)
+        dispatch_data = torch.matmul(sec_mask_f.permute(1, 2, 0), tokens)
+
+        expert_output = self._local_process(dispatch_data)
+
+        combine_weights = route_result_list[0].type_as(inputs)
+        combine_weights = combine_weights.view(combine_weights.shape[0], -1)
+        expert_output = expert_output.view(-1, expert_output.shape[-1])
+        ans = torch.matmul(combine_weights, expert_output)
+
+        ans = ans.reshape(inputs.shape)
+        return ans
+
+    def _local_process(self, expert_in: torch.Tensor) -> torch.Tensor:
+        expert_in = expert_in.unsqueeze(0)
+        x = expert_in
+
+        # Copied from colossalai MLPExperts class
+        e = x.size(1)
+        h = x.size(-1)
+
+        x = x.transpose(0, 1)
+        inshape = x.shape
+        x = x.reshape(e, -1, h)
+
+        x = [self.experts[i](x[i]) for i in range(e)]
+
+        x = torch.cat([x[i].unsqueeze(0) for i in range(e)], dim=0)
+        x = x.reshape(inshape)
+        x = x.transpose(0, 1).contiguous()
+
+        expert_out = x
+        return expert_out
 
 
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
@@ -275,10 +301,10 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
-class OpenMoeAttention(nn.Module):
+class HFOpenMoeAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
-    def __init__(self, config: LlamaConfig):
+    def __init__(self, config: HFOpenMoeConfig):
         super().__init__()
         self.config = config
         self.hidden_size = config.hidden_size
@@ -387,36 +413,27 @@ class OpenMoeAttention(nn.Module):
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
 
-        if HAS_FLASH_ATTN and self.use_kernel:
-            from flash_attn import flash_attn_func
+        attn_weights = torch.matmul(query_states, key_states.transpose(2, 3))
 
-            query_states = query_states.transpose(1, 2)
-            key_states = key_states.transpose(1, 2)
-            value_states = value_states.transpose(1, 2)
-            attn_output = flash_attn_func(query_states, key_states, value_states, softmax_scale=1.0, causal=True)
-            attn_output = attn_output.transpose(1, 2).contiguous()
-        else:
-            attn_weights = torch.matmul(query_states, key_states.transpose(2, 3))
+        if attn_weights.size() != (bsz, self.num_heads, q_len, kv_seq_len):
+            raise ValueError(
+                f"Attention weights should be of size {(bsz, self.num_heads, q_len, kv_seq_len)}, but is"
+                f" {attn_weights.size()}"
+            )
 
-            if attn_weights.size() != (bsz, self.num_heads, q_len, kv_seq_len):
+        if attention_mask is not None:
+            if attention_mask.size() != (bsz, 1, q_len, kv_seq_len):
                 raise ValueError(
-                    f"Attention weights should be of size {(bsz, self.num_heads, q_len, kv_seq_len)}, but is"
-                    f" {attn_weights.size()}"
+                    f"Attention mask should be of size {(bsz, 1, q_len, kv_seq_len)}, but is {attention_mask.size()}"
                 )
+            if self.training:
+                attention_mask = attention_mask.clone().detach()
+            attention_mask[:, :, :, 0] = 0
+            attn_weights = attn_weights + attention_mask
 
-            if attention_mask is not None:
-                if attention_mask.size() != (bsz, 1, q_len, kv_seq_len):
-                    raise ValueError(
-                        f"Attention mask should be of size {(bsz, 1, q_len, kv_seq_len)}, but is {attention_mask.size()}"
-                    )
-                if self.training:
-                    attention_mask = attention_mask.clone().detach()
-                attention_mask[:, :, :, 0] = 0
-                attn_weights = attn_weights + attention_mask
-
-            # upcast attention to fp32
-            attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
-            attn_output = torch.matmul(attn_weights, value_states)
+        # upcast attention to fp32
+        attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
+        attn_output = torch.matmul(attn_weights, value_states)
 
         if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
             raise ValueError(
@@ -440,39 +457,21 @@ class OpenMoeAttention(nn.Module):
         return attn_output, attn_weights, past_key_value
 
 
-class OpenMoeDecoderLayer(nn.Module):
-    def __init__(self, config: LlamaConfig, moe: bool):
+class HFOpenMoeDecoderLayer(nn.Module):
+    def __init__(self, config: HFOpenMoeConfig, moe: bool):
         super().__init__()
         self.hidden_size = config.hidden_size
         self.moe = moe
-        self.self_attn = OpenMoeAttention(config=config)
+        self.self_attn = HFOpenMoeAttention(config=config)
         #         self.self_attn = LlamaAttention(config=config)  # TODO: introduce LLaMA Positional Encoding
         self.input_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         if self.moe:
-            self.mlp = SparseMLP(
-                num_experts=config.num_experts,
-                hidden_size=config.hidden_size,
-                intermediate_size=config.intermediate_size,
-                router_top_k=config.router_topk,
-                router_capacity_factor_train=config.router_capacity_factor_train,
-                router_capacity_factor_eval=config.router_capacity_factor_eval,
-                router_min_capacity=config.router_min_capacity,
-                router_noisy_policy=config.router_noisy_policy,
-                router_drop_tks=config.router_drop_tks,
-                mlp_activation=config.hidden_act,
-                mlp_gated=config.mlp_gated,
-                enable_load_balance=config.enable_load_balance,
-                load_balance_tolerance=config.load_balance_tolerance,
-                load_balance_beam_width=config.load_balance_beam_width,
-                load_balance_group_swap_factor=config.load_balance_group_swap_factor,
-                enable_kernel=config.enable_kernel,
-                enable_comm_overlap=config.enable_comm_overlap,
-            )
+            self.mlp = HFOpenMoeSparseMLP(config)
             self.pre_extra_mlp_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
-            self.extra_mlp = OpenMoeMLP(config)
+            self.extra_mlp = HFOpenMoeMLP(config)
         else:
-            self.mlp = OpenMoeMLP(config)
+            self.mlp = HFOpenMoeMLP(config)
 
     def forward(
             self,
@@ -545,7 +544,7 @@ LLAMA_START_DOCSTRING = r"""
     and behavior.
 
     Parameters:
-        config ([`LlamaConfig`]):
+        config ([`HFOpenMoeConfig`]):
             Model configuration class with all the parameters of the model. Initializing with a config file does not
             load the weights associated with the model, only the configuration. Check out the
             [`~PreTrainedModel.from_pretrained`] method to load the model weights.
@@ -556,11 +555,11 @@ LLAMA_START_DOCSTRING = r"""
     "The bare LLaMA Model outputting raw hidden-states without any specific head on top.",
     LLAMA_START_DOCSTRING,
 )
-class OpenMoePreTrainedModel(PreTrainedModel):
-    config_class = LlamaConfig
+class HFOpenMoePreTrainedModel(PreTrainedModel):
+    config_class = HFOpenMoeConfig
     base_model_prefix = "model"
     supports_gradient_checkpointing = True
-    _no_split_modules = ["OpenMoeDecoderLayer"]
+    _no_split_modules = ["HFOpenMoeDecoderLayer"]
     _skip_keys_device_placement = "past_key_values"
 
     def _init_weights(self, module):
@@ -575,7 +574,7 @@ class OpenMoePreTrainedModel(PreTrainedModel):
                 module.weight.data[module.padding_idx].zero_()
 
     def _set_gradient_checkpointing(self, module, value=False):
-        if isinstance(module, OpenMoeModel):
+        if isinstance(module, HFOpenMoeModel):
             module.gradient_checkpointing = value
 
 
@@ -647,15 +646,15 @@ LLAMA_INPUTS_DOCSTRING = r"""
     "The bare LLaMA Model outputting raw hidden-states without any specific head on top.",
     LLAMA_START_DOCSTRING,
 )
-class OpenMoeModel(OpenMoePreTrainedModel):
+class HFOpenMoeModel(HFOpenMoePreTrainedModel):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`LlamaDecoderLayer`]
 
     Args:
-        config: LlamaConfig
+        config: HFOpenMoeConfig
     """
 
-    def __init__(self, config: LlamaConfig):
+    def __init__(self, config: HFOpenMoeConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
@@ -663,7 +662,7 @@ class OpenMoeModel(OpenMoePreTrainedModel):
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
         self.layers = nn.ModuleList(
             [
-                OpenMoeDecoderLayer(config, moe=True if (i + 1) % config.moe_layer_interval == 0 else False)
+                HFOpenMoeDecoderLayer(config, moe=True if (i + 1) % config.moe_layer_interval == 0 else False)
                 for i in range(config.num_hidden_layers)
             ]
         )
@@ -832,12 +831,12 @@ class OpenMoeModel(OpenMoePreTrainedModel):
         )
 
 
-class OpenMoeForCausalLM(OpenMoePreTrainedModel):
+class HFOpenMoeForCausalLM(HFOpenMoePreTrainedModel):
     # _tied_weights_keys = ["lm_head.weight"]
 
     def __init__(self, config):
         super().__init__(config)
-        self.model = OpenMoeModel(config)
+        self.model = HFOpenMoeModel(config)
         self.pretraining_tp = config.pretraining_tp
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
@@ -905,7 +904,6 @@ class OpenMoeForCausalLM(OpenMoePreTrainedModel):
         "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
         ```"""
         # reset moe loss
-        MOE_MANAGER.reset_loss()
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -956,10 +954,12 @@ class OpenMoeForCausalLM(OpenMoePreTrainedModel):
 
                     return custom_forward
 
-                aux_loss, z_loss = self._calculate_router_loss()
-                loss = aux_loss + z_loss
                 for batch_idx in range(hidden_states.shape[0]):
                     loss = loss + torch.utils.checkpoint.checkpoint(
+                        create_custom_forward(self.lm_head),
+                        hidden_states[batch_idx: batch_idx + 1, :],
+                        labels[batch_idx: batch_idx + 1, :],
+                    ) if loss is not None else torch.utils.checkpoint.checkpoint(
                         create_custom_forward(self.lm_head),
                         hidden_states[batch_idx: batch_idx + 1, :],
                         labels[batch_idx: batch_idx + 1, :],
@@ -972,9 +972,7 @@ class OpenMoeForCausalLM(OpenMoePreTrainedModel):
                 shift_logits = logits[..., :-1, :].contiguous()
                 shift_labels = labels[..., 1:].contiguous()
                 # Flatten the tokens
-                aux_loss, z_loss = self._calculate_router_loss()
-                loss = aux_loss + z_loss
-                loss = loss + self._calculate_loss(shift_logits, shift_labels)
+                loss = self._calculate_loss(shift_logits, shift_labels)
 
         if not return_dict:
             output = (logits,) + outputs[1:]
@@ -1026,14 +1024,6 @@ class OpenMoeForCausalLM(OpenMoePreTrainedModel):
                 tuple(past_state.index_select(0, beam_idx.to(past_state.device)) for past_state in layer_past),
             )
         return reordered_past
-
-    def _calculate_router_loss(self, aux_loss: list = None, z_loss: list = None):
-        if aux_loss is None or z_loss is None:
-            aux_loss, z_loss = MOE_MANAGER.get_loss()
-        assert len(aux_loss) == len(z_loss) == self.config.num_hidden_layers // self.config.moe_layer_interval
-        aux_loss = self.config.router_aux_loss_factor * sum(aux_loss) / len(aux_loss)
-        z_loss = self.config.router_z_loss_factor * sum(z_loss) / len(z_loss)
-        return aux_loss, z_loss
 
     def _calculate_loss(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         """Compute cross entropy and entropy for log probs and targets.
