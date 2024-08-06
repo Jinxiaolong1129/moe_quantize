@@ -20,14 +20,7 @@ from lm_eval.models.huggingface import HFLM
 from lm_eval.tasks import initialize_tasks
 
 LM_EVAL_TASK_KWARGS_DICT = {
-    "winogrande": {"task": "winogrande", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    "copa": {"task": "copa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    "openbookqa": {"task": "openbookqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
-    "hellaswag": {"task": "hellaswag", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
-    # "lambada_openai": {"task": "lambada_openai", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    # "rte": {"task": "rte", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    "piqa": {"task": "piqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    "mmlu": {"task": "mmlu", "num_fewshot": 5, "batch_size": 16, "metric": "acc"},
+    "gpqa": {task: "gpqa_main_cot_zeroshot", "num_fewshot": 0, "batch_size": 16, "metric": "exact_match"}
 }
 
 if __name__ == "__main__":
