@@ -15,7 +15,7 @@ os.makedirs(os.environ['HF_HOME'], exist_ok=True)
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from auto_gptq import AutoGPTQForCausalLM_mixed_precision
-from auto_gptq.modeling.openmoe import OpenMoeGPTQForCausalLM
+from auto_gptq.modeling.hf_openmoe import HFOpenMoeGPTQForCausalLM
 from lm_eval import evaluator
 from lm_eval.models.huggingface import HFLM
 from lm_eval.tasks import initialize_tasks
@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
     if args.is_quantized:
         quantized_model_file_base_name = args.quant_model_path.split("/")[-1]
-        model = OpenMoeGPTQForCausalLM.from_quantized(
+        model = HFOpenMoeGPTQForCausalLM.from_quantized(
             args.quant_model_path,
             low_cpu_mem_usage=True,
             device_map="auto",

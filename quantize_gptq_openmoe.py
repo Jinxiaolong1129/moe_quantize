@@ -15,7 +15,7 @@ os.makedirs(os.environ['HF_HOME'], exist_ok=True)
 from transformers import AutoTokenizer
 from datasets import load_dataset
 from auto_gptq import BaseQuantizeConfig_mixed_precision
-from auto_gptq.modeling.openmoe import OpenMoeGPTQForCausalLM
+from auto_gptq.modeling.hf_openmoe import HFOpenMoeGPTQForCausalLM
 import logging
 
 
@@ -64,9 +64,10 @@ def openmoe_quantize_config(bits_config_str: str):
             openmoe_bit[key] = moe_block_bit_dict[layer]
 
     for moe_block_num in [5, 11, 17, 23]:
-        for part in ["wi_gate", "wi_up", "wo"]:
-            key = f'model.layers.{moe_block_num}.mlp.experts.{part}'
-            openmoe_bit[key] = main_bits
+        for part in ["gate_proj", "up_proj", "down_proj"]:
+            for expert_id in range(32):
+                key = f'model.layers.{moe_block_num}.mlp.experts.{expert_id}.{part}'
+                openmoe_bit[key] = main_bits
         for part in ['gate_proj', 'up_proj', 'down_proj']:
             key = f'model.layers.{moe_block_num}.extra_mlp.{part}'
             openmoe_bit[key] = main_bits
@@ -148,7 +149,7 @@ def main():
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
-    model = OpenMoeGPTQForCausalLM.from_pretrained(
+    model = HFOpenMoeGPTQForCausalLM.from_pretrained(
         pretrained_model_name_or_path=model_name,
         quantize_config=quantize_config,
         trust_remote_code=True,

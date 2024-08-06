@@ -4,6 +4,7 @@ __all__ = ["HFOpenMoeConfig"]
 
 
 class HFOpenMoeConfig(LlamaConfig):
+    model_type = "openmoe"
     def __init__(
             self,
             num_experts: int = 32,

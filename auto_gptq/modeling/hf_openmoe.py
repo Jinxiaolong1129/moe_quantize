@@ -4,26 +4,28 @@
 from ._base import BaseGPTQForCausalLM_mixed_precision
 
 
-class OpenMoeGPTQForCausalLM(BaseGPTQForCausalLM_mixed_precision):
-    model_type = "llama"
-    layer_type = "OpenMoeDecoderLayer"
+class HFOpenMoeGPTQForCausalLM(BaseGPTQForCausalLM_mixed_precision):
+    model_type = "openmoe"
+    layer_type = "HFOpenMoeDecoderLayer"
     layers_block_name = "model.layers"
     outside_layer_modules = ["model.embed_tokens", "model.norm"]
 
     moe_1_list = []
     moe_2_list = []
 
-    for part in ['wi_gate', 'wi_up']:
-        key = f"mlp.experts.{part}"
-        moe_1_list.append(key)
+    for part in ['gate_proj', 'up_proj']:
+        for i in range(32):
+            key = f"mlp.experts.{i}.{part}"
+            moe_1_list.append(key)
 
     for part in ['gate_proj', 'up_proj']:
         key = f"extra_mlp.{part}"
         moe_1_list.append(key)
 
-    for part in ['wo']:
-        key = f"mlp.experts.{part}"
-        moe_2_list.append(key)
+    for i in range(32):
+        for part in ['down_proj']:
+            key = f"mlp.experts.{i}.{part}"
+            moe_2_list.append(key)
 
     for part in ['down_proj']:
         key = f"extra_mlp.{part}"
@@ -44,4 +46,4 @@ class OpenMoeGPTQForCausalLM(BaseGPTQForCausalLM_mixed_precision):
     ]
 
 
-__all__ = ["OpenMoeGPTQForCausalLM"]
+__all__ = ["HFOpenMoeGPTQForCausalLM"]
