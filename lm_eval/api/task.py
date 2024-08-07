@@ -717,7 +717,7 @@ class ConfigurableTask(Task):
         self.dataset = datasets.load_dataset(
             path=self.DATASET_PATH,
             name=self.DATASET_NAME,
-            **dataset_kwargs if dataset_kwargs is not None else {},
+            **dataset_kwargs
         )
 
     def has_training_docs(self) -> bool:
