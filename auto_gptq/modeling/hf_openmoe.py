@@ -21,8 +21,8 @@ class HFOpenMoeGPTQForCausalLM(BaseGPTQForCausalLM_mixed_precision):
     for part in ['gate_proj', 'up_proj']:
         key = f"extra_mlp.{part}"
         moe_1_list.append(key)
-        key = f"mlp.{part}"
-        moe_1_list.append(key)
+        # key = f"mlp.{part}"
+        # moe_1_list.append(key)
 
     for i in range(32):
         for part in ['down_proj']:
@@ -32,8 +32,8 @@ class HFOpenMoeGPTQForCausalLM(BaseGPTQForCausalLM_mixed_precision):
     for part in ['down_proj']:
         key = f"extra_mlp.{part}"
         moe_2_list.append(key)
-        key = f"mlp.{part}"
-        moe_1_list.append(key)
+        # key = f"mlp.{part}"
+        # moe_1_list.append(key)
 
     inside_layer_modules = [
         ["self_attn.k_proj", "self_attn.v_proj", "self_attn.q_proj"],
