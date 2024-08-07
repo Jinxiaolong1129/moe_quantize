@@ -23,7 +23,7 @@ DEBUG=0 CUDA_VISIBLE_DEVICES=1 python quantize_gptq_openmoe.py \
       --bits main_4.attn_4.layer_5_2.layer_23_2 \
       --bits_name main_4.attn_4.predicted_2  &
 
-DEBUG=0 CUDA_VISIBLE_DEVICES=6,7 python lm_eval_gptq_openmoe.py \
+DEBUG=0 CUDA_VISIBLE_DEVICES=5,6,7 python lm_eval_gptq_openmoe.py \
     --model_name openmoe-checkpoints/openmoe-8b-native-pt \
     --quant_model_path autogptq_openmoe-checkpoints/openmoe-8b-native-pt-gptq_w_bit_main_4.attn_4.first_2 \
     --is_quantized &

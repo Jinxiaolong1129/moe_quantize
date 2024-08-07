@@ -27,8 +27,8 @@ LM_EVAL_TASK_KWARGS_DICT = {
     "hellaswag": {"task": "hellaswag", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
     # "lambada_openai": {"task": "lambada_openai", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
     # "rte": {"task": "rte", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    "piqa": {"task": "piqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    "mmlu": {"task": "mmlu", "num_fewshot": 5, "batch_size": 16, "metric": "acc"},
+    "piqa": {"task": "piqa", "num_fewshot": 0, "batch_size": 64, "metric": "acc"},
+    "mmlu": {"task": "mmlu", "num_fewshot": 5, "batch_size": 8, "metric": "acc"},
 }
 
 if __name__ == "__main__":
