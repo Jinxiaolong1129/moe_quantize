@@ -95,6 +95,8 @@ if __name__ == "__main__":
     if not args.is_quantized:
         os.makedirs(f"{args.model_name}-fp16")
 
+    print(f"Will save to {save_file_path}")
+
     all_metrics = {}
     if os.path.exists(save_file_path):
         with open(save_file_path, 'r') as file:
