@@ -59,7 +59,7 @@ def dump_mixtral_routing_top_trace(
     if is_quantized:
         quantized_model_file_base_name = quant_model_path.split("/")[-1]
         model = AutoGPTQForCausalLM_mixed_precision.from_quantized(
-            args.quant_model_path,
+            quant_model_path,
             low_cpu_mem_usage=True,
             device_map="auto",
             model_basename=quantized_model_file_base_name,
