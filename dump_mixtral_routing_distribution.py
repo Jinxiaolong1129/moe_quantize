@@ -6,6 +6,7 @@ import random
 
 import torch
 from datasets import load_dataset, Dataset
+from auto_gptq import AutoGPTQForCausalLM_mixed_precision
 from fire import Fire
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -42,7 +43,9 @@ def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
 
 def dump_mixtral_routing_top_trace(
         save_dir: str = "./results",
-        batch_size: int = 1
+        batch_size: int = 1,
+        quant_model_path: str = None,
+        is_quantized: bool = False,
 ):
     tokenizer = AutoTokenizer.from_pretrained("mistralai/Mixtral-8x7B-v0.1")
     dataset = get_wikitext2(tokenizer=tokenizer, seqlen=4096, nsamples=512, split="train")
@@ -53,9 +56,23 @@ def dump_mixtral_routing_top_trace(
         shuffle=True,
     )
 
-    model = MixtralForCausalLM.from_pretrained(
-        "mistralai/Mixtral-8x7B-v0.1", torch_dtype=torch.float16, device_map='auto'
-    )
+    if is_quantized:
+        quantized_model_file_base_name = quant_model_path.split("/")[-1]
+        model = AutoGPTQForCausalLM_mixed_precision.from_quantized(
+            args.quant_model_path,
+            low_cpu_mem_usage=True,
+            device_map="auto",
+            model_basename=quantized_model_file_base_name,
+            use_safetensors=True,
+            trust_remote_code=True,
+            inject_fused_mlp=False,
+            inject_fused_attention=False,
+            # disable_exllama=args.disable_exllama,
+        )
+    else:
+        model = MixtralForCausalLM.from_pretrained(
+            "mistralai/Mixtral-8x7B-v0.1", torch_dtype=torch.float16, device_map='auto'
+        )
     config = model.config
 
     expert_routed_distribution = torch.zeros(config.num_hidden_layers, config.num_local_experts)
