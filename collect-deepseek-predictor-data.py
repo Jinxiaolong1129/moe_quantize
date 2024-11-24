@@ -296,63 +296,73 @@ def collect_deepseek_ffn_mse_loss(
     )
     tokenizer = AutoTokenizer.from_pretrained('deepseek-ai/deepseek-moe-16b-base')
 
-    def _custom_decoder_forward(
-            self,
-            hidden_states: torch.Tensor,
-            attention_mask: Optional[torch.Tensor] = None,
-            position_ids: Optional[torch.LongTensor] = None,
-            past_key_value: Optional[Tuple[torch.Tensor]] = None,
-            output_attentions: Optional[bool] = False,
-            output_router_logits: Optional[bool] = False,
-            use_cache: Optional[bool] = False,
-            **kwargs
-    ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
-        residual = hidden_states
+    # def _custom_decoder_forward(
+    #         self,
+    #         hidden_states: torch.Tensor,
+    #         attention_mask: Optional[torch.Tensor] = None,
+    #         position_ids: Optional[torch.LongTensor] = None,
+    #         past_key_value: Optional[Tuple[torch.Tensor]] = None,
+    #         output_attentions: Optional[bool] = False,
+    #         output_router_logits: Optional[bool] = False,
+    #         use_cache: Optional[bool] = False,
+    #         **kwargs
+    # ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
+    #     residual = hidden_states
+    #
+    #     hidden_states = self.input_layernorm(hidden_states)
+    #
+    #     # Self Attention
+    #     hidden_states, self_attn_weights, present_key_value = self.self_attn(
+    #         hidden_states=hidden_states,
+    #         attention_mask=attention_mask,
+    #         position_ids=position_ids,
+    #         past_key_value=past_key_value,
+    #         output_attentions=output_attentions,
+    #         use_cache=use_cache,
+    #     )
+    #     hidden_states = residual.to(hidden_states.device) + hidden_states
+    #
+    #     # Fully Connected
+    #     input_token = hidden_states.detach().clone().cpu()  # added
+    #     residual = hidden_states
+    #     hidden_states = self.post_attention_layernorm(hidden_states)
+    #     hidden_states, router_logits = self.block_sparse_moe(hidden_states)
+    #     hidden_states = residual + hidden_states
+    #     output_token = hidden_states.detach().clone().cpu()  # added
+    #     with torch.no_grad():
+    #         block_ffn_input_output_pair[self._module_name].append(
+    #             torch.nn.functional.mse_loss(input_token.float(), output_token.float(), reduction="mean").item()
+    #         )  # added
+    #
+    #     outputs = (hidden_states,)
+    #
+    #     if output_attentions:
+    #         outputs += (self_attn_weights,)
+    #
+    #     if use_cache:
+    #         outputs += (present_key_value,)
+    #
+    #     if output_router_logits:
+    #         outputs += (router_logits,)
+    #
+    #     return outputs
 
-        hidden_states = self.input_layernorm(hidden_states)
-
-        # Self Attention
-        hidden_states, self_attn_weights, present_key_value = self.self_attn(
-            hidden_states=hidden_states,
-            attention_mask=attention_mask,
-            position_ids=position_ids,
-            past_key_value=past_key_value,
-            output_attentions=output_attentions,
-            use_cache=use_cache,
-        )
-        hidden_states = residual.to(hidden_states.device) + hidden_states
-
-        # Fully Connected
-        input_token = hidden_states.detach().clone().cpu()  # added
-        residual = hidden_states
-        hidden_states = self.post_attention_layernorm(hidden_states)
-        hidden_states, router_logits = self.block_sparse_moe(hidden_states)
-        hidden_states = residual + hidden_states
-        output_token = hidden_states.detach().clone().cpu()  # added
+    def _custom_ffn_forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        input_token = hidden_states.detach().clone().cpu()
+        original_output = self._original_forward(hidden_states)
+        output_token = original_output[0].detach().clone().cpu()
         with torch.no_grad():
             block_ffn_input_output_pair[self._module_name].append(
                 torch.nn.functional.mse_loss(input_token.float(), output_token.float(), reduction="mean").item()
-            )  # added
-
-        outputs = (hidden_states,)
-
-        if output_attentions:
-            outputs += (self_attn_weights,)
-
-        if use_cache:
-            outputs += (present_key_value,)
-
-        if output_router_logits:
-            outputs += (router_logits,)
-
-        return outputs
+            )
+        return original_output
 
     block_ffn_input_output_pair = {}
     for name, module in model.named_modules():
-        if type(module).__name__ == 'DeepseekDecoderLayer':
+        if type(module).__name__ == 'DeepSeekMoE':
             block_ffn_input_output_pair[name] = []
             module._module_name = name
-            module.forward = _custom_decoder_forward.__get__(module, type(module))
+            module.forward = _custom_ffn_forward.__get__(module, type(module))
 
     model.eval()
 
