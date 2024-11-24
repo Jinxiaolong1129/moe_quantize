@@ -95,7 +95,6 @@ def collect_deepseek_predictor_test_data(
     block_ffn_input_output_pair = {}
     for name, module in model.named_modules():
         if type(module).__name__ == 'DeepseekMoE':
-            
             block_ffn_input_output_pair[name] = []
             module._original_forward = module.forward
             module._module_name = name
@@ -360,6 +359,7 @@ def collect_deepseek_ffn_mse_loss(
     block_ffn_input_output_pair = {}
     for name, module in model.named_modules():
         if type(module).__name__ == 'DeepSeekMoE':
+            print(f"Adding {name} to block_ffn_input_output_pair")
             block_ffn_input_output_pair[name] = []
             module._original_forward = module.forward
             module._module_name = name
