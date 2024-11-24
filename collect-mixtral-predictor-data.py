@@ -358,7 +358,7 @@ def collect_mixtral_ffn_with_residual_cosine_similarity(
         #     )  # added
         with torch.no_grad():
             block_ffn_input_output_pair_cos_sim[self._module_name].append(
-                torch.nn.functional.mse_loss(input_token, output_token)
+                torch.nn.functional.mse_loss(input_token.float(), output_token.float())
             )  # added
 
         outputs = (hidden_states,)
