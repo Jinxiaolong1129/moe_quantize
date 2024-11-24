@@ -357,10 +357,9 @@ def collect_mixtral_ffn_with_residual_cosine_similarity(
         #         torch.nn.functional.cosine_similarity(input_token, output_token, dim=-1)
         #     )  # added
         with torch.no_grad():
-            print(torch.nn.functional.mse_loss(input_token.float(), output_token.float(), reduction="mean").shape)
-            # block_ffn_input_output_pair_cos_sim[self._module_name].append(
-            #     torch.nn.functional.mse_loss(input_token.float(), output_token.float(), reduction="mean")
-            # )  # added
+            block_ffn_input_output_pair_cos_sim[self._module_name].append(
+                torch.nn.functional.mse_loss(input_token.float(), output_token.float(), reduction="mean").item()
+            )  # added
 
         outputs = (hidden_states,)
 
@@ -401,6 +400,11 @@ def collect_mixtral_ffn_with_residual_cosine_similarity(
 
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
+
+    block_ffn_input_output_pair_cos_sim = {
+        key: torch.tensor(value).mean().item()
+        for key, value in block_ffn_input_output_pair_cos_sim.items()
+    }
 
     # torch.save(block_ffn_input_output_pair_cos_sim, f"{save_dir}/cosine_similarity.pt")
     torch.save(block_ffn_input_output_pair_cos_sim, f"{save_dir}/mse_similarity.pt")
