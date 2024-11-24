@@ -32,8 +32,8 @@ def _get_profiling_dataset(tokenizer, seq_len, num_samples):
 @torch.no_grad()
 def collect_mixtral_block_output(
         seq_len=1024,
-        num_samples=400,
-        save_dir="/data/data12/pingzhi/data/wikitext_block_output"
+        num_samples=100,
+        save_dir="./wikitext_block_output"
 ):
     model = MixtralForCausalLM.from_pretrained(
         "mistralai/Mixtral-8x7B-v0.1", torch_dtype=torch.bfloat16, device_map="auto"
