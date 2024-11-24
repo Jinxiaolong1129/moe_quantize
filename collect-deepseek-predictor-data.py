@@ -387,4 +387,4 @@ def main(function_name = None):
         
 
 if __name__ == "__main__":
-    Fire(main)
+    Fire(collect_deepseek_ffn_mse_loss)
