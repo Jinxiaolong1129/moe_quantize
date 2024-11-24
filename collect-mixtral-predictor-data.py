@@ -352,9 +352,13 @@ def collect_mixtral_ffn_with_residual_cosine_similarity(
         hidden_states, router_logits = self.block_sparse_moe(hidden_states)
         hidden_states = residual + hidden_states
         output_token = hidden_states.detach().clone().cpu()  # added
+        # with torch.no_grad():
+        #     block_ffn_input_output_pair_cos_sim[self._module_name].append(
+        #         torch.nn.functional.cosine_similarity(input_token, output_token, dim=-1)
+        #     )  # added
         with torch.no_grad():
             block_ffn_input_output_pair_cos_sim[self._module_name].append(
-                torch.nn.functional.cosine_similarity(input_token, output_token, dim=-1)
+                torch.nn.functional.mse_loss(input_token, output_token)
             )  # added
 
         outputs = (hidden_states,)
@@ -397,8 +401,8 @@ def collect_mixtral_ffn_with_residual_cosine_similarity(
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
 
-    torch.save(block_ffn_input_output_pair_cos_sim, f"{save_dir}/cosine_similarity.pt")
-
+    # torch.save(block_ffn_input_output_pair_cos_sim, f"{save_dir}/cosine_similarity.pt")
+    torch.save(block_ffn_input_output_pair_cos_sim, f"{save_dir}/mse_similarity.pt")
 
 if __name__ == "__main__":
     Fire(collect_mixtral_ffn_with_residual_cosine_similarity)
