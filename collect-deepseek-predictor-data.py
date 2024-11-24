@@ -361,6 +361,7 @@ def collect_deepseek_ffn_mse_loss(
     for name, module in model.named_modules():
         if type(module).__name__ == 'DeepSeekMoE':
             block_ffn_input_output_pair[name] = []
+            module._original_forward = module.forward
             module._module_name = name
             module.forward = _custom_ffn_forward.__get__(module, type(module))
 
