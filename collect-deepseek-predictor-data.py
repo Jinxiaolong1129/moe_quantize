@@ -12,8 +12,8 @@ from transformers import AutoModelForCausalLM
 
 
 def get_Pile_dataset(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
-    custom_cache_dir = '/home/LeiFeng/xiaolong/moe_quantize/data/minipile/'
-    data = load_dataset('mit-han-lab/pile-val-backup', cache_dir=custom_cache_dir)['validation']
+    # custom_cache_dir = '/home/LeiFeng/xiaolong/moe_quantize/data/minipile/'
+    data = load_dataset('mit-han-lab/pile-val-backup')['validation']
 
     text = "".join([" \n" if s == "" else s for s in data["text"][:1000]])
 
