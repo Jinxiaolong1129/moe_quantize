@@ -17,3 +17,4 @@ sqlitedict
 rouge-score
 numexpr
 zstandard
+fire
