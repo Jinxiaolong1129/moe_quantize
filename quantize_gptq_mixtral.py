@@ -10,8 +10,8 @@ import torch
 print(sys.path)
 os.environ['HF_TOKEN'] = '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'
 
-os.environ['HF_HOME'] = '/data2/pzli/hf_cache'
-os.makedirs(os.environ['HF_HOME'], exist_ok=True)
+# os.environ['HF_HOME'] = '/data2/pzli/hf_cache'
+# os.makedirs(os.environ['HF_HOME'], exist_ok=True)
 from transformers import AutoTokenizer
 from datasets import load_dataset
 from auto_gptq import AutoGPTQForCausalLM_mixed_precision, BaseQuantizeConfig_mixed_precision
