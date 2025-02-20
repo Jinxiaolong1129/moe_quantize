@@ -6,7 +6,7 @@ attrdict
 tqdm
 evaluate
 deepspeed
-datasets
+datasets==2.21.0
 tensorboardX
 peft
 scikit-learn
