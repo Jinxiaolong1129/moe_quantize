@@ -9,7 +9,6 @@ import sys
 import torch
 
 print(sys.path)
-os.makedirs(os.environ['HF_HOME'], exist_ok=True)
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from auto_gptq import AutoGPTQForCausalLM_mixed_precision
