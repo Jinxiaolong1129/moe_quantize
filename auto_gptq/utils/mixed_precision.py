@@ -50,10 +50,11 @@ def get_top_expert(matrix):
     return sorted_expert_indices_by_block
 
 
-
+# TDOO change here
 # distribution_matrix = torch.load('/home/LeiFeng/xiaolong/moe_quantize/save/routing-count.pt')
 # sorted_expert_indices_by_block = get_top_expert(distribution_matrix)
-    
+distribution_matrix = torch.randn(27, 64)  # 27 blocks, 64 experts
+sorted_expert_indices_by_block = get_top_expert(distribution_matrix)
     
 
 
@@ -488,8 +489,8 @@ def moe_quantize_config(args):
 
     args.bits = 'moe.shared_28'
 
-    distribution_matrix = None
-    sorted_expert_indices_by_block = get_top_expert(distribution_matrix)
+    # distribution_matrix = None
+    # sorted_expert_indices_by_block = get_top_expert(distribution_matrix)
     
     # top moe expert bit
     # other_block 4bit

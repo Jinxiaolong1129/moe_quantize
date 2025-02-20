@@ -16,13 +16,11 @@ def get_top_expert(matrix):
 
 
 
-distribution_matrix = torch.load('save/deepseek-routing-count.pt')
+# distribution_matrix = torch.load('save/deepseek-routing-count.pt')
+# sorted_expert_indices_by_block = get_top_expert(distribution_matrix)
+distribution_matrix = torch.randn(27, 64)  # 27 blocks, 64 experts
 sorted_expert_indices_by_block = get_top_expert(distribution_matrix)
     
-
-
-
-
 
 def generate_deeepseek_bit_topk(bit_config_str):
     def parse_config_string(config_string):
@@ -104,6 +102,7 @@ def generate_deeepseek_bit_topk(bit_config_str):
                 key = f'model.layers.{block_num}' + '.' + layer
                 deeepseek_bit[key] = moe_block_bit_dict[layer]
     return deeepseek_bit
+
 
 
 def generate_deeepseek_bit_topk_random(bit_config_str):
@@ -758,6 +757,66 @@ def deepseek_quantize_config(args):
                 deeepseek_bit[key] = moe_block_bit_dict[layer]
         return deeepseek_bit
         
+        
+    # moe.shared_8.other_2+other_block.4
+    pattern = r"^moe\.shared_(\d+)\.other_(\d+)\+other_block\.(\d+)$"
+    if re.match(pattern, args.bits):
+        def parse_config_string(config_string):
+            config_dict = {
+                "moe.shared_experts": 0,
+                "moe.experts": 0,
+                "attention": 0,
+            }
+
+            shared_experts_match = re.search(r"shared_(\d+)", config_string)
+            if shared_experts_match:
+                config_dict["moe.shared_experts"] = int(shared_experts_match.group(1))
+
+            experts_match = re.search(r"other_(\d+)", config_string)
+            if experts_match:
+                config_dict["moe.experts"] = int(experts_match.group(1))
+
+            attention_match = re.search(r"other_block\.(\d+)", config_string)
+            if attention_match:
+                config_dict["attention"] = int(attention_match.group(1))
+
+            return config_dict
+
+        bit_config_dict = parse_config_string(args.bits)
+        
+        moe_block_bit_dict = {}
+
+        for i in range(4):
+            key = f"self_attn.{['q_proj', 'k_proj', 'v_proj', 'o_proj'][i]}"
+            moe_block_bit_dict[key] = bit_config_dict['attention']
+
+        deeepseek_bit = {
+            'model.layers.0.self_attn.q_proj': bit_config_dict['attention'], 
+            'model.layers.0.self_attn.k_proj': bit_config_dict['attention'],
+            'model.layers.0.self_attn.v_proj': bit_config_dict['attention'],
+            'model.layers.0.self_attn.o_proj': bit_config_dict['attention'],
+            'model.layers.0.mlp.gate_proj': bit_config_dict['attention'],
+            'model.layers.0.mlp.up_proj': bit_config_dict['attention'],
+            'model.layers.0.mlp.down_proj': bit_config_dict['attention']
+        }
+        
+        for i in range(64):
+            for part in ['gate_proj', 'up_proj', 'down_proj']:
+                key = f"mlp.experts.{i}.{part}"
+                moe_block_bit_dict[key] = bit_config_dict['moe.experts']
+
+        for part in ['gate_proj', 'up_proj', 'down_proj']:
+            key = f"mlp.shared_experts.{part}"
+            moe_block_bit_dict[key] = bit_config_dict['moe.shared_experts']
+
+        for block_num in range(1, 28):
+            for layer in moe_block_bit_dict:
+                key = f'model.layers.{block_num}' + '.' + layer
+                deeepseek_bit[key] = moe_block_bit_dict[layer]
+
+        return deeepseek_bit
+    
+    
     # top k
     pattern = r'^moe\.shared_\d+\.top\d+_\d+\.other_\d+\+other_block\.\d+$'
     if re.match(pattern, args.bits):

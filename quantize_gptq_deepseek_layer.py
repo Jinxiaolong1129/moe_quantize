@@ -158,11 +158,10 @@ def main():
     parser.add_argument("--model_name", type=str, default='deepseek-ai/deepseek-moe-16b-base')
     parser.add_argument("--quantized_model_file_base_name", type=str, default=None)
     parser.add_argument("--quant_path", type=str, default=None)
-    
     parser.add_argument("--nsamples", type=int, default=512)
     parser.add_argument("--seqlen", type=int, default=512)  
-
     parser.add_argument("--group_size", type=int, default=128)    
+    parser.add_argument("--save_path", type=str, default=None)
     
     args = parser.parse_args()
     
@@ -179,7 +178,16 @@ def main():
 
 
     model_name = args.model_name    
-    quant_path = f'autogptq_{model_name}-gptq_w_bit_{args.bits}'
+    model_specific_path = f'autogptq_{model_name}-gptq_w_bit_{args.bits}'
+    
+    if args.save_path:
+        quant_path = os.path.join(args.save_path, model_specific_path)
+        logging.info(f"Using combined save path: {quant_path}")
+    else:
+        quant_path = model_specific_path
+        logging.info(f"Using default save path: {quant_path}")
+        
+        
     quantized_model_file_base_name = f'{model_name.split("/")[-1]}-gptq_w_bit_{args.bits}'
     
     logging.info(f"Quantized model will be saved to {quant_path}")
@@ -190,10 +198,10 @@ def main():
     logging.info(f"Quantization config: {deeepseek_bit}")
     print(f"Quantization config:\n {deeepseek_bit}")
     
+    
     quantize_config = BaseQuantizeConfig_mixed_precision(
         bits=deeepseek_bit,  # quantize model to 4-bit
         group_size=args.group_size,  # it is recommended to set the value to 128
-        # NOTE
         desc_act=True,  # set to False can significantly speed up inference but the perplexity may slightly bad
         model_file_base_name = quantized_model_file_base_name
     )

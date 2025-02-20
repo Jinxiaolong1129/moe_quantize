@@ -11,7 +11,6 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import (
     set_seed,
-    MixtralForCausalLM,
     AutoTokenizer,
     default_data_collator
 )
@@ -108,4 +107,4 @@ if __name__ == "__main__":
 
 
 
-# CUDA_VISIBLE_DEVICES=7 python deepseek-distribution.py --save_dir save/ --batch_size 32
+# CUDA_VISIBLE_DEVICES=4,5,6,7 python deepseek-distribution.py --save_dir save/ --batch_size 32

@@ -1,0 +1,38 @@
+#!/bin/bash
+export PYTHONPATH=auto_gptq/:$PYTHONPATH
+
+
+export CUDA_VISIBLE_DEVICES=7
+nohup python quantize_gptq_deepseek_layer.py \
+    --model_name deepseek-ai/deepseek-moe-16b-base \
+    --nsamples 512 \
+    --group_size 64 \
+    --bits "moe.shared_4.other_2+other_block.4" \
+    > run_log/desc_act_True/moe.shared_4.other_2+other_block.4.out &
+
+
+export CUDA_VISIBLE_DEVICES=2
+nohup python quantize_gptq_deepseek_layer.py \
+    --model_name deepseek-ai/deepseek-moe-16b-base \
+    --nsamples 512 \
+    --group_size 64 \
+    --bits "moe.shared_8.other_2+other_block.4" \
+    > run_log/desc_act_True/moe.shared_8.other_2+other_block.4.out &
+
+
+export CUDA_VISIBLE_DEVICES=4
+nohup python quantize_gptq_deepseek_layer.py \
+    --model_name deepseek-ai/deepseek-moe-16b-base \
+    --nsamples 512 \
+    --group_size 64 \
+    --bits "moe.shared_3.other_2+other_block.4" \
+    > run_log/desc_act_True/moe.shared_3.other_2+other_block.4.out &
+
+
+export CUDA_VISIBLE_DEVICES=5
+nohup python quantize_gptq_deepseek_layer.py \
+    --model_name deepseek-ai/deepseek-moe-16b-base \
+    --nsamples 512 \
+    --group_size 64 \
+    --bits "moe.shared_2.other_2+other_block.4" \
+    > run_log/desc_act_True/moe.shared_2.other_2+other_block.4.out &

@@ -11,7 +11,7 @@ import logging
 from datasets import load_dataset
 
 from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig, AutoGPTQForCausalLM_mixed_precision, BaseQuantizeConfig_mixed_precision
-from auto_gptq import moe_quantize_config
+from auto_gptq import deepseek_quantize_config
 import logging
 import csv
 import time
