@@ -33,7 +33,7 @@ def get_wikitext2(tokenizer, seqlen: int, nsamples: int, split: str = "train"):
         j = i + seqlen
         inp = enc.input_ids[:, i:j]
         attention_mask = torch.ones_like(inp)
-        dataset.append({"input_ids": inp, "attention_mask": attention_mask})
+        dataset.append({"input_ids": inp.cuda(), "attention_mask": attention_mask.cuda()})
     return dataset
 
 
