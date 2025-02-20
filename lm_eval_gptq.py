@@ -9,7 +9,6 @@ import sys
 import torch
 
 print(sys.path)
-os.environ['HF_HOME'] = '/data2/pzli/hf_cache'
 os.makedirs(os.environ['HF_HOME'], exist_ok=True)
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
