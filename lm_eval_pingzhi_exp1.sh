@@ -1,9 +1,6 @@
 
 #!/bin/bash
 
-export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/lm_eval/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
-export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/lm_eval/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
-
 quant_model_path=(
     'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.other_2+other_block.4'
     'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.other_2+other_block.4'

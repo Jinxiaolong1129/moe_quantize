@@ -1,6 +1,4 @@
 #!/bin/bash
-export PYTHONPATH=auto_gptq/:$PYTHONPATH
-
 
 export CUDA_VISIBLE_DEVICES=4
 nohup python quantize_gptq_deepseek_layer.py \
