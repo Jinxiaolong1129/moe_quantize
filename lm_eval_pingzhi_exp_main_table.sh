@@ -11,6 +11,7 @@ quant_model_path=(
 echo "Bash start running..."
 
 export CUDA_VISIBLE_DEVICES=0,1,2
+export HF_DATASETS_TRUST_REMOTE_CODE=true
 
 for i in "${!quant_model_path[@]}"; do
     echo "Running ${quant_model_path[$i]} on CUDA device"
