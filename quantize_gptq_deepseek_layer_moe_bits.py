@@ -53,16 +53,24 @@ def average_bit():
     
     log_data = []
     
-    eval_bits = [args.bits]
+    def extract_bits(filename):
+        """Extract the bits part from the filename."""
+        try:
+            return filename.split("_w_bit_")[1].split("_pile")[0]
+        except IndexError:
+            return None
 
+    eval_bits = [args.bits]
+    
     eval_bits = [
-        "moe.shared_2.other_2+other_block.4",
-        "moe.shared_4.other_2+other_block.4",
-        "moe.shared_4.top30_4.other_2+other_block.4",
-        'moe.shared_4.top25_4.other_2+other_block.4+startlayer_5',
-        'moe.shared_4.top25_4.other_2+other_block.4+dejavu_5',
+        "moe.shared_4.top2_4.other_2+other_block.4",
+        "moe.shared_4.other.2+other_block.8",
+        "moe.shared_4.top1_4.other_2+other_block.8",
+        "moe.shared_4.top2_8.other_2+other_block.4",
+        "moe.shared_4.top2_4.other_2+other_block.8",
+        "moe.shared_4.top1_8.other_2+other_block.8",
+        "moe.shared_4.top5_4.other_2+other_block.8"
     ]
-        
     print(f"len(eval_bits): {len(eval_bits)}")
     
     
@@ -132,20 +140,20 @@ def average_bit():
         # Add the data to the list
         log_data.append(data)
     
-    fieldnames = ["Bits", "MoE Average Bit", "Self-Attention Average Bit", "Average Bit"]
+    # fieldnames = ["Bits", "MoE Average Bit", "Self-Attention Average Bit", "Average Bit"]
 
-    # Open a CSV file to write the data
-    with open('deepseek_bits_data.csv', 'w', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    # # Open a CSV file to write the data
+    # with open('deepseek_bits_data.csv', 'w', newline='') as csvfile:
+    #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-        # Write the header
-        writer.writeheader()
+    #     # Write the header
+    #     writer.writeheader()
         
-        # Write the log data
-        writer.writerows(log_data)
+    #     # Write the log data
+    #     writer.writerows(log_data)
 
-    print("Log data has been saved to log_data.csv.")
-    return average_bit
+    # print("Log data has been saved to log_data.csv.")
+    
 
 def main():
     parser = ArgumentParser()
@@ -224,8 +232,8 @@ def main():
 
     
 if __name__ == "__main__":
-    # average_bit()
-    main()
+    average_bit()
+    # main()
     
     
     
@@ -234,6 +242,7 @@ if __name__ == "__main__":
 # export PYTHONPATH=/home/LeiFeng/xiaolong/moe_quantize/optimum/:$PYTHONPATH:/home/LeiFeng/xiaolong/moe_quantize/auto_gptq/:$PYTHONPATH
 # export CUDA_VISIBLE_DEVICES=0,1
 # python quantize_gptq_deepseek.py \
+
 
 
 # =========================
