@@ -22,6 +22,8 @@ for i in "${!quant_model_path[@]}"; do
         --quant_model_path autogptq_deepseek-ai/${quant_model_path[$i]} \
         --is_quantized > "run_log/gptq_eval/log_${quant_model_path[$i]}.log" 2>&1 &
 
-    wait
+    current_pid=$!
+
+    wait $current_pid
 done
 
