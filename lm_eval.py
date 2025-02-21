@@ -24,15 +24,11 @@ from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig, AutoGPTQForCausal
 
 
 LM_EVAL_TASK_KWARGS_DICT = {
-    # "winogrande": {"task": "winogrande", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    # "copa": {"task": "copa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    # "hellaswag": {"task": "hellaswag", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
-    # "lambada_openai": {"task": "lambada_openai", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    
-    # "rte": {"task": "rte", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    # "piqa": {"task": "piqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
-    # "openbookqa": {"task": "openbookqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
-
+    "winogrande": {"task": "winogrande", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
+    "copa": {"task": "copa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
+    "openbookqa": {"task": "openbookqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
+    "hellaswag": {"task": "hellaswag", "num_fewshot": 0, "batch_size": 128, "metric": "acc_norm"},
+    "piqa": {"task": "piqa", "num_fewshot": 0, "batch_size": 128, "metric": "acc"},
     "mmlu": {"task": "mmlu", "num_fewshot": 5, "batch_size": 16, "metric": "acc"},
 }
 
@@ -50,7 +46,7 @@ class eval_config():
                 is_quantized=False, 
                 use_safetensors=False, 
                 use_fast_tokenizer=False, 
-                trust_remote_code=False, 
+                trust_remote_code=True, 
                 disable_exllama=False):
         
         self.model_name = model_name
