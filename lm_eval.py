@@ -257,6 +257,7 @@ if __name__ == "__main__":
             pretrained=model,
             tokenizer=tokenizer,
             batch_size=task_kwargs["batch_size"],
+            trust_remote_code=True,
         )
         initialize_tasks(verbosity="ERROR")
         results = evaluator.simple_evaluate(
