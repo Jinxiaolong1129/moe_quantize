@@ -112,6 +112,8 @@ def lm_eval_gptq(args):
         with open(save_file_path, 'r') as file:
             all_metrics = json.load(file)
 
+    print(LM_EVAL_TASK_KWARGS_DICT)
+    print('debug!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     for task_kwargs in LM_EVAL_TASK_KWARGS_DICT.values():
         logging.info(f"Evaluating task: {task_kwargs['task']}")
         task_name = task_kwargs["task"]

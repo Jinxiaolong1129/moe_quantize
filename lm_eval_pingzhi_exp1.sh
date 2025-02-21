@@ -9,6 +9,8 @@ quant_model_path=(
 
 echo "Bash start running..."
 
+mkdir -p run_log/gptq_eval/
+
 export CUDA_VISIBLE_DEVICES=2,3,4,5,6,7
 export CUDA_LAUNCH_BLOCKING=1
 export TORCH_USE_CUDA_DSA=1
