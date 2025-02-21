@@ -10,7 +10,7 @@ quant_model_path=(
 
 echo "Bash start running..."
 
-export CUDA_VISIBLE_DEVICES=0,1,2
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 export HF_DATASETS_TRUST_REMOTE_CODE=true
 
 for i in "${!quant_model_path[@]}"; do
@@ -20,10 +20,8 @@ for i in "${!quant_model_path[@]}"; do
     nohup python lm_eval.py \
         --model_name 'deepseek-ai/deepseek-moe-16b-base' \
         --quant_model_path autogptq_deepseek-ai/${quant_model_path[$i]} \
-        --is_quantized > "run_log/gptq_eval/log_${quant_model_path[$i]}.log" 2>&1 &
+        --is_quantized > "run_log/gptq_eval/log_${quant_model_path[$i]}.log" 2>&1
 
-    current_pid=$!
-
-    wait $current_pid
+    wait
 done
 
