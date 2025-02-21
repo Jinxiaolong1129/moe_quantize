@@ -10,12 +10,13 @@ quant_model_path=(
 echo "Bash start running..."
 
 export CUDA_VISIBLE_DEVICES=2,3,4,5,6,7
+export CUDA_LAUNCH_BLOCKING=1
 
 for i in "${!quant_model_path[@]}"; do
     echo "Running ${quant_model_path[$i]} on CUDA device"
     echo "CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
-    nohup CUDA_LAUNCH_BLOCKING=1 python lm_eval.py \
+    nohup python lm_eval.py \
         --model_name 'deepseek-ai/deepseek-moe-16b-base' \
         --quant_model_path autogptq_deepseek-ai/${quant_model_path[$i]} \
         --is_quantized > "run_log/gptq_eval/log_${quant_model_path[$i]}.log" 2>&1
