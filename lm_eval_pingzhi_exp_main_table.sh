@@ -2,9 +2,10 @@
 
 quant_model_path=(
     'deepseek-moe-16b-base-gptq_w_bit_moe.shared_2.other_2+other_block.4'
-    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_3.other_2+other_block.4'
     'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.other_2+other_block.4'
-    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_8.other_2+other_block.4'
+    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top30_4.other_2+other_block.4'
+    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top25_4.other_2+other_block.4+startlayer_5'
+    'deepseek-moe-16b-base-gptq_w_bit_moe.shared_4.top25_4.other_2+other_block.4+dejavu_5'
 )
 
 echo "Bash start running..."
