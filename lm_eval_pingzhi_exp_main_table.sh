@@ -20,7 +20,7 @@ for i in "${!quant_model_path[@]}"; do
     nohup python lm_eval.py \
         --model_name 'deepseek-ai/deepseek-moe-16b-base' \
         --quant_model_path autogptq_deepseek-ai/${quant_model_path[$i]} \
-        --is_quantized > "run_log/gptq_eval/log_${quant_model_path[$i]}.log" 2>&1
+        --is_quantized > "run_log/gptq_eval/log_${quant_model_path[$i]}.log" 2>&1 &
 
     wait
 done
