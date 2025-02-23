@@ -2,6 +2,7 @@ import torch
 import argparse
 import re
 import random
+import math
 
 def get_top_expert(matrix):
     sorted_values, sorted_indices = torch.sort(matrix, dim=1,descending=True)
@@ -848,7 +849,7 @@ def moe_quantize_config_layer(args):
 # moe.shared_8.top25_4.other_2+other_block.4+alpha10
 # moe.shared_8.top25_4.other_2+other_block.4+alpha20
 # moe.shared_8.top25_4.other_2+other_block.4+alpha30
-def generate_deeepseek_combination_alpha(bit_config_str):
+def generate_deeepseek_combination_alpha_top(bit_config_str):
     path = 'save/deepseek_linear_weight_outlier_metric.pt'
     outlier_data = torch.load(path)
     filtered_data = {k: v for k, v in outlier_data.items() if 'mlp.experts' in k}
@@ -968,6 +969,98 @@ def generate_deeepseek_combination_alpha(bit_config_str):
                         deeepseek_bit[key] = bit_config_dict['moe.experts.top']
                     elif key in outlier_alpha:
                         deeepseek_bit[key] = bit_config_dict['moe.experts.top']
+                    else:
+                        deeepseek_bit[key] = bit_config_dict['moe.experts']
+                else:
+                    # attention
+                    key = f'model.layers.{block_num}' + '.' + layer
+                    deeepseek_bit[key] = moe_block_bit_dict[layer]          
+    
+    return deeepseek_bit
+
+
+
+# moe.shared_4.other_2+other_block.4+alpha50
+def generate_deeepseek_combination_alpha_no_frequency_topk(bit_config_str):
+    path = 'save/deepseek_linear_weight_outlier_metric.pt'
+    outlier_data = torch.load(path)
+    filtered_data = {k: v for k, v in outlier_data.items() if 'mlp.experts' in k}
+    outlier_data = dict(sorted(filtered_data.items(), key=lambda item: item[1], reverse=True))
+    
+    def parse_config_string(config_string):
+        config_dict = {
+            "moe.shared_experts": 0,
+            "moe.experts": 0,
+            "moe.experts.alpha": 0,
+            "attention": 0,
+        }
+        # Extract the shared_experts value
+        shared_experts_match = re.search(r"shared_(\d+)", config_string)
+        if shared_experts_match:
+            config_dict["moe.shared_experts"] = int(shared_experts_match.group(1))
+
+        # Extract the experts value
+        experts_match = re.search(r"other_(\d+)", config_string)
+        if experts_match:
+            config_dict["moe.experts"] = int(experts_match.group(1))
+
+        attention_match = re.search(r"other_block\.(\d+)", config_string)
+        if attention_match:
+            config_dict["attention"] = int(attention_match.group(1))
+
+        percent = re.search(r"alpha(\d+)", config_string)
+        if percent:
+            config_dict["moe.experts.alpha"] = int(percent.group(1))
+
+        return config_dict
+
+
+    bit_config_dict = parse_config_string(bit_config_str)
+    
+    moe_block_bit_dict = {}
+
+    for i in range(4):
+        key = f"self_attn.{['q_proj', 'k_proj', 'v_proj', 'o_proj'][i]}"
+        moe_block_bit_dict[key] = bit_config_dict['attention']
+
+    deeepseek_bit = {
+        'model.layers.0.self_attn.q_proj': bit_config_dict['attention'], 
+        'model.layers.0.self_attn.k_proj': bit_config_dict['attention'],
+        'model.layers.0.self_attn.v_proj': bit_config_dict['attention'],
+        'model.layers.0.self_attn.o_proj': bit_config_dict['attention'],
+        'model.layers.0.mlp.gate_proj': bit_config_dict['attention'],
+        'model.layers.0.mlp.up_proj': bit_config_dict['attention'],
+        'model.layers.0.mlp.down_proj': bit_config_dict['attention']
+    }
+    
+    for i in range(64):
+        for part in ['gate_proj', 'up_proj', 'down_proj']:
+            key = f"mlp.experts.{i}.{part}"
+            moe_block_bit_dict[key] = bit_config_dict['moe.experts']
+
+    for part in ['gate_proj', 'up_proj', 'down_proj']:
+        key = f"mlp.shared_experts.{part}"
+        moe_block_bit_dict[key] = bit_config_dict['moe.shared_experts']
+
+
+    if 'alpha' in bit_config_str:
+        alpha = bit_config_dict['moe.experts.alpha']
+        blocks = list(range(1, 28))
+        # k = int(len(outlier_data) * alpha / 100)
+        # list(outlier_data.keys())[:k]
+        # select int(64*alpha)*27*3 个 outlier
+        
+        outlier_alpha = []
+        total_limit = math.ceil(64 * 27 * 3 * alpha / 100)
+        outlier_alpha = list(outlier_data.keys())[:total_limit]
+            
+        blocks = list(range(1, 28))
+        for block_num in blocks:
+            for layer in moe_block_bit_dict:
+                if 'mlp.experts' in layer:
+                    key = f'model.layers.{block_num}' + '.' + layer
+                    if key in outlier_alpha:
+                        deeepseek_bit[key] = 4
                     else:
                         deeepseek_bit[key] = bit_config_dict['moe.experts']
                 else:
@@ -1104,11 +1197,22 @@ def deepseek_quantize_config(args):
         deeepseek_bit = generate_deeepseek_outlier(args.bits)
         return deeepseek_bit
 
-    # moe.shared_8.top25_4.other_2+other_block.4+alpha30
+    # moe.shared_4.top25_4.other_2+other_block.4+alpha30
     pattern = r"^moe\.shared_\d+\.top\d+_\d+\.other_\d+\+other_block\.(\d+)\+alpha(\d+)$"
     if re.match(pattern, args.bits):
-        deeepseek_bit = generate_deeepseek_combination_alpha(args.bits)
+        deeepseek_bit = generate_deeepseek_combination_alpha_top(args.bits)
         return deeepseek_bit
+
+    # moe.shared_4.other_2+other_block.4+alpha50
+    pattern = r"^moe\.shared_\d+\.other_\d+\+other_block\.(\d+)\+alpha(\d+)$"
+    if re.match(pattern, args.bits):
+        print('='*50)
+        print('Exp 6!!!!')
+        print('='*50)
+        
+        deeepseek_bit = generate_deeepseek_combination_alpha_no_frequency_topk(args.bits)
+        return deeepseek_bit
+    
 
     # moe.shared_8.top25_4.other_2+other_block.4+startlayer_5
     pattern = r"^moe\.shared_(\d+)+\.top\d+_\d+\.other_(\d+)\+other_block\.(\d+)\+(startlayer|endlayer|randomlayer)_(\d+)$"
@@ -1136,7 +1240,7 @@ if __name__ == "__main__":
     config_str = 'moe.shared_8.top25_4.other_2+other_block.4+alpha30'
     args.bits = config_str
 
-    bit = generate_deeepseek_combination_alpha(config_str)
+    bit = generate_deeepseek_combination_alpha_top(config_str)
     print(bit)
 
 

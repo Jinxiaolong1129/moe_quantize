@@ -61,6 +61,12 @@ def average_bit():
         "moe.shared_4.top30_4.other_2+other_block.4",
         'moe.shared_4.top25_4.other_2+other_block.4+startlayer_5',
         'moe.shared_4.top25_4.other_2+other_block.4+dejavu_5',
+        "moe.shared_4.other_2+other_block.4+alpha30",
+        "moe.shared_4.other_2+other_block.4+alpha40",
+        "moe.shared_4.other_2+other_block.4+alpha50",
+        "moe.shared_4.other_2+other_block.4+alpha55",
+        "moe.shared_4.other_2+other_block.4+alpha60",
+        "moe.shared_4.other_2+other_block.4+alpha70",
     ]
         
     print(f"len(eval_bits): {len(eval_bits)}")
