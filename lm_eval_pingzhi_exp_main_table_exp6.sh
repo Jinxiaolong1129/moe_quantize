@@ -14,7 +14,7 @@ quant_model_path=(
 
 echo "Bash start running..."
 mkdir -p run_log/gptq_eval/
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+export CUDA_VISIBLE_DEVICES=0,1,2
 export HF_DATASETS_TRUST_REMOTE_CODE=true
 
 for i in "${!quant_model_path[@]}"; do
