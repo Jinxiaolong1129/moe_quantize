@@ -1,3 +1,5 @@
+export HF_HOME=./cache
+
 DEBUG=0 CUDA_VISIBLE_DEVICES=0 python quantize_gptq_mixtral.py \
       --model_name mistralai/Mixtral-8x7B-v0.1 \
       --bits main_2.attn_4.layer_0_4.layer_1_4.layer_2_4.layer_3_4.keyword__w2__4 \
