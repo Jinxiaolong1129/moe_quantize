@@ -19,3 +19,4 @@ numexpr
 zstandard
 fire
 sentencepiece
+gekko
